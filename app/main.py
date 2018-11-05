@@ -42,7 +42,7 @@ def move():
     # TODO: Do things with data
     
     directions = ['up', 'down', 'left', 'right']
-    direction = random.choice(directions)
+    direction = 'right'
     print direction
     return {
         'move': direction,

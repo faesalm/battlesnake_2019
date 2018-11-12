@@ -17,10 +17,7 @@ def static(path):
 @bottle.post('/start')
 def start():
     # TODO: Do things with data
-    return {
-        'color': '#00FF00',
-    }
-
+	return {'Orange': 0xffa500}
 
 @bottle.post('/move')
 def move():
@@ -31,12 +28,14 @@ def move():
     directions = ['up', 'down', 'left', 'right']
     direction = 'right'
     print direction
-    return {
-        'move': direction,
-        'taunt': 'battlesnake-python!'
-    }
-	
+    return {'move': direction}
+
 # Expose WSGI app (so gunicorn can find it)
+
+@bottle.post('/move')
+def move():
+	return {}
+
 application = bottle.default_app()
 
 if __name__ == '__main__':

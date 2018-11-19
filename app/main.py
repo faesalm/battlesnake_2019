@@ -20,13 +20,9 @@ def start():
 @bottle.post('/move')
 def move():
 	data = bottle.request.json
-
 	directions = ['up', 'down', 'left', 'right']
 	direction = 'right'
 	print direction
-	return {'move': direction}
-	direction = random.choice(directions)
-
 	return MoveResponse(direction)
 
 
@@ -41,6 +37,23 @@ def end():
 @bottle.post('/ping')
 def ping():
 	return "Alive"
+	
+# return list of dicts of closest foods in order
+# format: [{'y': 7, 'x': 11, 'dist': 9}, {'y': 1, 'x': 5, 'dist': 13}]
+def find_closest_food(data):
+	foods = data['food']['data']
+	# food dicts
+	foods = [{'x':food['x'],'y': food['y'], 'dist' : -1} for food in foods]
+	my_head = {'x':data['you']['body']['data'][0]['x'],'y':data['you']['body']['data'][0]['y']}
+	
+	for food in foods:
+		x_dist = abs(food['x'] - my_head['x'])
+		y_dist = abs(food['y'] - my_head['y'])
+		total = x_dist + y_dist 
+		food['dist'] = total
+	# sort by distance
+	sorted_foods = sorted(foods, key=lambda k: k['dist'])
+	return sorted_foods
 
 def board_output():
 	return 0

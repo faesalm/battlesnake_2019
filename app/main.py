@@ -30,11 +30,10 @@ def move():
     print direction
     return {'move': direction}
 
-# Expose WSGI app (so gunicorn can find it)
+def board_output():
+    return 0
 
-@bottle.post('/move')
-def move():
-	return {}
+# Expose WSGI app (so gunicorn can find it)
 
 application = bottle.default_app()
 

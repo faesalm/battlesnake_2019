@@ -34,12 +34,22 @@ def move():
     data = bottle.request.json
     snake_data = data.get('snakes')['data']
     snakes = []
+    food_data = data.get('food')['data']
+    foods = []
+
+    #declare game_board as global in method so it can be updated
+    global game_board
+
+    for food in food_data:
+        x = food['x']
+        y = food['y']
+        game_board[y][x] = 'F'
+
+
     for data in snake_data:
         snakes.append(data.get('body')['data'])
     
     i = 1
-    #declare game_board as global in method so it can be updated
-    global game_board
     for snake in snakes:
         print('Snake '+str(i)+':')
         for segment in snake:

@@ -30,18 +30,32 @@ def start():
     game_board[:] = '-'
 
     # TODO: Do things with data
-    print(json.dumps(data))
+    #print(json.dumps(data))
 
     return StartResponse("#00ff00")
 
 @bottle.post('/move')
 def move():
     data = bottle.request.json
+    
+    # TODO: Do things with data
+    #print(json.dumps(data))
+    
+    # TODO: Do things with data
+    directions = ['up', 'down', 'left', 'right']
+    direction = 'right'
+    #return next move
+    direction = random.choice(directions)
+    board_output(data)
+
+    return MoveResponse(direction)
+
+
+def board_output(data):
     snake_data = data.get('snakes')['data']
     snakes = []
     food_data = data.get('food')['data']
     foods = []
-
     #declare game_board as global in method so it can be updated
     global game_board
 
@@ -49,14 +63,8 @@ def move():
         x = food['x']
         y = food['y']
         game_board[y][x] = 'F'
-
-
     for data in snake_data:
-        snakes.append(data.get('body')['data'])
-        
-    # TODO: Do things with data
-    print(json.dumps(data))
-    
+        snakes.append(data.get('body')['data'])   
     i = 1
     for snake in snakes:
         print('Snake '+str(i)+':')
@@ -67,25 +75,15 @@ def move():
             print 'Y: '+str(y)+'\n'
             game_board[y][x] = 'X'
         i = i+1
-        
     #print current state of game board
     print(game_board)
-    # TODO: Do things with data
-    directions = ['up', 'down', 'left', 'right']
-    direction = 'right'
-    #print direction
-    #return next move
-    direction = random.choice(directions)
-
-    return MoveResponse(direction)
-
 
 @bottle.post('/end')
 def end():
     data = bottle.request.json
 
     # TODO: Any cleanup that needs to be done for this game based on the data
-    print json.dumps(data)
+    #print json.dumps(data)
 
 
 @bottle.post('/ping')
@@ -93,9 +91,6 @@ def ping():
     return "Alive"
 
 # Expose WSGI app (so gunicorn can find it)
-
-def board_output(board_width, board_height):
-    return 0
 
 application = bottle.default_app()
 

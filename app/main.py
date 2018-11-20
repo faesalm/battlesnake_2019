@@ -26,7 +26,7 @@ def start():
     board_width = data.get('width')
     board_height = data.get('height')
     #create empty game board.
-    game_board = np.chararray((board_height, board_width))
+    game_board = np.empty([board_height, board_width], dtype='string')
     game_board[:] = '-'
 
 @bottle.post('/move')
@@ -34,13 +34,12 @@ def move():
     data = bottle.request.json
     snake_data = data.get('snakes')['data']
     snakes = []
-    #declare game_board as global in method so it can be updated
-    global game_board
-    global board_width, board_height
     for data in snake_data:
         snakes.append(data.get('body')['data'])
     
     i = 1
+    #declare game_board as global in method so it can be updated
+    global game_board
     for snake in snakes:
         print('Snake '+str(i)+':')
         for segment in snake:
@@ -51,11 +50,12 @@ def move():
             game_board[y][x] = 'X'
         i = i+1
         
+    #print current state of game board
+    print(game_board)
     # TODO: Do things with data
     directions = ['up', 'down', 'left', 'right']
     direction = 'right'
     #print direction
-    print(game_board)
     #return next move
     return {'move': direction}
 

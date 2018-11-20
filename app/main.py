@@ -5,6 +5,7 @@ import numpy as np
 
 global game_board
 global board_height, board_width
+from api import *
 
 @bottle.route('/')
 def static():
@@ -19,7 +20,6 @@ def static(path):
 @bottle.post('/start')
 def start():
     # TODO: Do things with data
-	#return {'Orange': 0xffa500}
     data = bottle.request.json
     global board_width, board_height
     global game_board
@@ -28,6 +28,11 @@ def start():
     #create empty game board.
     game_board = np.empty([board_height, board_width], dtype='string')
     game_board[:] = '-'
+
+    # TODO: Do things with data
+    print(json.dumps(data))
+
+    return StartResponse("#00ff00")
 
 @bottle.post('/move')
 def move():
@@ -48,6 +53,9 @@ def move():
 
     for data in snake_data:
         snakes.append(data.get('body')['data'])
+        
+    # TODO: Do things with data
+    print(json.dumps(data))
     
     i = 1
     for snake in snakes:
@@ -67,7 +75,22 @@ def move():
     direction = 'right'
     #print direction
     #return next move
-    return {'move': direction}
+    direction = random.choice(directions)
+
+    return MoveResponse(direction)
+
+
+@bottle.post('/end')
+def end():
+    data = bottle.request.json
+
+    # TODO: Any cleanup that needs to be done for this game based on the data
+    print json.dumps(data)
+
+
+@bottle.post('/ping')
+def ping():
+    return "Alive"
 
 # Expose WSGI app (so gunicorn can find it)
 
@@ -81,4 +104,4 @@ if __name__ == '__main__':
         application,
         host=os.getenv('IP', '0.0.0.0'),
         port=os.getenv('PORT', '8080'),
-        debug = True)
+        debug=True)

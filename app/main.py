@@ -19,82 +19,91 @@ def start():
 
 @bottle.post('/move')
 def move():
-    
     data = bottle.request.json
-	directions = ['up', 'down', 'left', 'right']
-	direction = 'right'
-	print direction
-	return MoveResponse(direction)
-    #return {'move': direction}
-
-    #return MoveResponse(direction)
+    directions = checkMove(data)
+    print 'directions in move', 
+    print directions,
+    direction = random.choice(directions)
+    print direction
+	#print direction
+    return MoveResponse(direction)
+    #return direction
+    
 
 #Returns list of valid directions to travel
 def checkMove(data):
     #taken from Chelsea's repo from last year
-    #perhaps this bit should go into main so that way we could pass snake info to our diff methods without having to rewrite dict each time
+    #perhaps this should go into main so that way we could pass snake info to our diff methods without having to rewrite this dict each time
+   
     me = data.get('you')
     headx = me['body']['data'][0]['x']
     heady = me['body']['data'][0]['y']
     head = (headx, heady)
 
-    #know this works
+    #print me
     body_length = len(me['body']['data'])
-    print 'LENGTH IS ',
-    print body_length
-    #everything but head and tail
-    
+   # print body_length
     my_body = []
-
     if body_length>2:
-        my_body.append(data.get('body')['data'][1:body_length-2]
-    
+        my_body.extend(me['body']['data'][1:-1])
 
-    #midx = me['body']['data'][(length-1)/2]['x']
-    #midy = me['body']['data'][(length-1)/2]['y']
-    #mid = (midx, midy)
-    tailx = me['body']['data'][(body_length)-1]['x']
-    taily = me['body']['data'][(body_length)-1]['y']
+    #print "HELLO the body is",
+    #print my_body
+    tailx = me['body']['data'][-1]['x']
+    taily = me['body']['data'][-1]['y']
     tail = (tailx, taily)
 
-    snek = {'head': {'x': headx, 'y': heady},'body': my_body, 'tail': {'x': tailx, 'y': taily}
-}
+    #
+
+    snek = {'head': {'x': headx, 'y': heady},'body': my_body, 'tail': {'x': tailx, 'y': taily}}
+    
+    #print snek
     directions = ['up', 'down', 'left', 'right']
     
+    directions = checkWalls(directions, snek, data)
     
-    #check walls
-    
-
-	#check around head to make sure snake does not run into itself
+   # neckx = snek['body'][0]['x']
+    #necky = snek['body'][0]['y]']
+  
+    #right now, just making sure snake will not run into neck, but will need to update to not run into any body segments
 	#check right
-    #if snek['head']['x']+1 == snek['body']['x'] or snek['head']['x']+1 == snek['tail']['x']:
+    #if snek['head']['x']+1 == neckx or snek['head']['x']+1 == snek['tail']['x']:
 	#	directions.remove('right')
 	#check left
-    #if snek['head']['x']-1 == snek['body']['x'] or snek['head']['x']-1 == snek['tail']['x']:
+    #if snek['head']['x']-1 == neckx or snek['head']['x']-1 == snek['tail']['x']:
 	#	directions.remove('left')
 
 	#check down
-    #if snek['head']['y']+1 == snek['body']['y'] or snek['head']['y']+1 == snek['tail']['y']:
-	#   directions.remove('down')
+    #if snek['head']['y']+1 == necky or snek['head']['y']+1 == snek['tail']['y']:
+	 #  directions.remove('down')
 
 	#check up
-    #if snek['head']['y']-1 == snek['body']['y'] or snek['head']['y']-1 == snek['tail']['y']:
-    #   directions.remove('up')
+    #if snek['head']['y']-1 == necky or snek['head']['y']-1 == snek['tail']['y']:
+     #c  directions.remove('up')
     
 	# at  this point directions are only valid directions
     
     #directions = ['right']
     return directions
 
-def checkWalls(directions, snake):
+def checkWalls(directions, snek, data):
+
     if snek['head']['x'] == 0:
+        print 'at x min',
         directions.remove('left')
+        print directions
     if snek['head']['y'] == 0:
+        print 'at y min',
         directions.remove('up')
+        print directions
     if snek['head']['x'] == data.get('width')-1:
+        print 'at x max',
         directions.remove('right')
+        print directions
     if snek['head']['y'] == data.get('height')-1:
+        print 'at y max',
         directions.remove('down')
+        print directions
     return directions
 
 

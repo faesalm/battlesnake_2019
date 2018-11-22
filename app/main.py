@@ -57,65 +57,62 @@ def checkMove(data):
     #print snek
     
     directions = ['up', 'down', 'left', 'right']
-    
     directions = checkWalls(directions, snek, data)
+    print 'after checkwalls:',
+    print directions
+    directions = checkSelf(directions, snek, my_trunk)
+    print "after checkself:",
+    print directions
+    #Only need apply if directions has not been accounted for
     
-    #neckx = snek['trunk'][0]['x']
-    #necky = snek['trunk'][0]['y']
-  
-    #still need to implement checking all body degments
-    i = 0
+    #directions = ['right']
+    return directions
+
+#returns list of valid directions
+def checkSelf(directions, snek, my_trunk):
     for segment in my_trunk:
         trunkx = segment['x']
         trunky = segment['y']
         #check right
         if snek['head']['x']+1 == trunkx:
-		    directions.remove('right')
-	    #check left
+            if 'right' in directions:
+                directions.remove('right')
+		#check left
         if snek['head']['x']-1 == trunkx:
-		    directions.remove('left')
+            if 'left' in directions:
+		        directions.remove('left')
 	    #check down
         if snek['head']['y']+1 == trunky:
-	        directions.remove('down')
+            if 'down' in directions: 
+	            directions.remove('down')
 	    #check up
         if snek['head']['y']-1 == trunky:
-            directions.remove('up')
-    
-    #check between head and tail
-   # if snek['head']['x']+1 == snek['tail']['x']:
-   #     directions.remove('right')
-    #if snek['head']['x']-1 == snek['tail']['x']:
-    #    directions.remove('left')
-    #if snek['head']['y']+1 == snek['tail']['y']:
-    #    directions.remove('down')
-    #if snek['head']['y']-1 == snek['tail']['y']:
-    #    directions.remove('up')
-
-
-	
-    
-	# at  this point directions are only valid directions
-    
-    #directions = ['right']
+            if 'up' in directions:
+                directions.remove('up')
+    print "in checkself: ",
+    print directions
     return directions
 
 def checkWalls(directions, snek, data):
 
     if snek['head']['x'] == 0:
-      #  print 'at x min',
-        directions.remove('left')
+        if 'left' in directions:
+            directions.remove('left')
        # print directions
     if snek['head']['y'] == 0:
        # print 'at y min',
-        directions.remove('up')
+       if 'up' in directions:
+            directions.remove('up')
         #print directions
     if snek['head']['x'] == data.get('width')-1:
         #print 'at x max',
-        directions.remove('right')
+        if 'right' in directions:
+            directions.remove('right')
         #print directions
     if snek['head']['y'] == data.get('height')-1:
         #print 'at y max',
-        directions.remove('down')
+        if 'down' in directions:
+            directions.remove('down')
         #print directions
     return directions
 

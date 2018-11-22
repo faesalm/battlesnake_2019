@@ -40,14 +40,12 @@ def checkMove(data):
     heady = me['body']['data'][0]['y']
     head = (headx, heady)
 
-    #print me
     body_length = len(me['body']['data'])
    # print body_length
     my_body = []
     if body_length>2:
         my_body.extend(me['body']['data'][1:-1])
 
-    #print "HELLO the body is",
     #print my_body
     tailx = me['body']['data'][-1]['x']
     taily = me['body']['data'][-1]['y']
@@ -56,30 +54,30 @@ def checkMove(data):
     #
 
     snek = {'head': {'x': headx, 'y': heady},'body': my_body, 'tail': {'x': tailx, 'y': taily}}
-    
     #print snek
+    
     directions = ['up', 'down', 'left', 'right']
     
     directions = checkWalls(directions, snek, data)
     
-   # neckx = snek['body'][0]['x']
-    #necky = snek['body'][0]['y]']
+    neckx = snek['body'][0]['x']
+    necky = snek['body'][0]['y']
   
     #right now, just making sure snake will not run into neck, but will need to update to not run into any body segments
 	#check right
-    #if snek['head']['x']+1 == neckx or snek['head']['x']+1 == snek['tail']['x']:
-	#	directions.remove('right')
+    if snek['head']['x']+1 == neckx or snek['head']['x']+1 == snek['tail']['x']:
+		directions.remove('right')
 	#check left
-    #if snek['head']['x']-1 == neckx or snek['head']['x']-1 == snek['tail']['x']:
-	#	directions.remove('left')
+    if snek['head']['x']-1 == neckx or snek['head']['x']-1 == snek['tail']['x']:
+		directions.remove('left')
 
 	#check down
-    #if snek['head']['y']+1 == necky or snek['head']['y']+1 == snek['tail']['y']:
-	 #  directions.remove('down')
+    if snek['head']['y']+1 == necky or snek['head']['y']+1 == snek['tail']['y']:
+	    directions.remove('down')
 
 	#check up
-    #if snek['head']['y']-1 == necky or snek['head']['y']-1 == snek['tail']['y']:
-     #c  directions.remove('up')
+    if snek['head']['y']-1 == necky or snek['head']['y']-1 == snek['tail']['y']:
+        directions.remove('up')
     
 	# at  this point directions are only valid directions
     

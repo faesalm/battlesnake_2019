@@ -21,10 +21,10 @@ def start():
 def move():
     data = bottle.request.json
     directions = checkMove(data)
-    print 'directions in move', 
-    print directions,
+    #print 'directions in move', 
+    #print directions,
     direction = random.choice(directions)
-    print direction
+    #print direction
 	#print direction
     return MoveResponse(direction)
     #return direction
@@ -40,44 +40,59 @@ def checkMove(data):
     heady = me['body']['data'][0]['y']
     head = (headx, heady)
 
-    body_length = len(me['body']['data'])
+    trunk_length = len(me['body']['data'])
    # print body_length
-    my_body = []
-    if body_length>2:
-        my_body.extend(me['body']['data'][1:-1])
+    my_trunk = []
+    if trunk_length>2:
+       # my_trunk.extend(me['body']['data'][1:])
+        my_trunk.extend(me.get('body')['data'][1:])
 
-    #print my_body
-    tailx = me['body']['data'][-1]['x']
-    taily = me['body']['data'][-1]['y']
-    tail = (tailx, taily)
+    print my_trunk
+    #tailx = me['body']['data'][-1]['x']
+    #taily = me['body']['data'][-1]['y']
+    #tail = (tailx, taily)
 
-    #
-
-    snek = {'head': {'x': headx, 'y': heady},'body': my_body, 'tail': {'x': tailx, 'y': taily}}
+    snek = {'head': {'x': headx, 'y': heady},'trunk': my_trunk}
+    #, 'tail': {'x': tailx, 'y': taily}}
     #print snek
     
     directions = ['up', 'down', 'left', 'right']
     
     directions = checkWalls(directions, snek, data)
     
-    neckx = snek['body'][0]['x']
-    necky = snek['body'][0]['y']
+    #neckx = snek['trunk'][0]['x']
+    #necky = snek['trunk'][0]['y']
   
-    #right now, just making sure snake will not run into neck, but will need to update to not run into any body segments
-	#check right
-    if snek['head']['x']+1 == neckx or snek['head']['x']+1 == snek['tail']['x']:
-		directions.remove('right')
-	#check left
-    if snek['head']['x']-1 == neckx or snek['head']['x']-1 == snek['tail']['x']:
-		directions.remove('left')
+    #still need to implement checking all body degments
+    i = 0
+    for segment in my_trunk:
+        trunkx = segment['x']
+        trunky = segment['y']
+        #check right
+        if snek['head']['x']+1 == trunkx:
+		    directions.remove('right')
+	    #check left
+        if snek['head']['x']-1 == trunkx:
+		    directions.remove('left')
+	    #check down
+        if snek['head']['y']+1 == trunky:
+	        directions.remove('down')
+	    #check up
+        if snek['head']['y']-1 == trunky:
+            directions.remove('up')
+    
+    #check between head and tail
+   # if snek['head']['x']+1 == snek['tail']['x']:
+   #     directions.remove('right')
+    #if snek['head']['x']-1 == snek['tail']['x']:
+    #    directions.remove('left')
+    #if snek['head']['y']+1 == snek['tail']['y']:
+    #    directions.remove('down')
+    #if snek['head']['y']-1 == snek['tail']['y']:
+    #    directions.remove('up')
 
-	#check down
-    if snek['head']['y']+1 == necky or snek['head']['y']+1 == snek['tail']['y']:
-	    directions.remove('down')
 
-	#check up
-    if snek['head']['y']-1 == necky or snek['head']['y']-1 == snek['tail']['y']:
-        directions.remove('up')
+	
     
 	# at  this point directions are only valid directions
     
@@ -87,21 +102,21 @@ def checkMove(data):
 def checkWalls(directions, snek, data):
 
     if snek['head']['x'] == 0:
-        print 'at x min',
+      #  print 'at x min',
         directions.remove('left')
-        print directions
+       # print directions
     if snek['head']['y'] == 0:
-        print 'at y min',
+       # print 'at y min',
         directions.remove('up')
-        print directions
+        #print directions
     if snek['head']['x'] == data.get('width')-1:
-        print 'at x max',
+        #print 'at x max',
         directions.remove('right')
-        print directions
+        #print directions
     if snek['head']['y'] == data.get('height')-1:
-        print 'at y max',
+        #print 'at y max',
         directions.remove('down')
-        print directions
+        #print directions
     return directions
 
 

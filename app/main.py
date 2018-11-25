@@ -18,9 +18,9 @@ def start():
 
 @bottle.post('/move')
 def move():
-  data = bottle.request.json
+	data = bottle.request.json
 	directions = ['up', 'down', 'left', 'right']
-	
+
 	sorted_food = find_closest_food(data)
 	direction = go_to_food(data, sorted_food[0], directions)
 	board_output(data) 
@@ -130,7 +130,6 @@ def end():
 	data = bottle.request.json
     # TODO: Any cleanup that needs to be done for this game based on the data
     #print json.dumps(data)
-
 
 @bottle.post('/ping')
 def ping():

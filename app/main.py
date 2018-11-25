@@ -23,14 +23,12 @@ def move():
 	
 	sorted_food = find_closest_food(data)
 	direction = go_to_food(data, sorted_food[0], directions)
-  
+        board_output(data) 
 	return MoveResponse(direction)
 
 
 def board_output(data):
-    global board_width, board_height
     #declare game_board as global in method so it can be updated
-    global game_board
     board_width = data.get('width')
     board_height = data.get('height')
     #create empty game board.
@@ -51,13 +49,10 @@ def board_output(data):
         snakes.append(data.get('body')['data'])   
     i = 1
     for snake in snakes:
-        print('Snake '+str(i)+':')
         j = 0
         for segment in snake:
             x = segment.get('x')
             y = segment.get('y')
-            print 'X: '+str(x)
-            print 'Y: '+str(y)+'\n'
             #Set head
             if j == 0:
                 game_board[y][x] = 'H'

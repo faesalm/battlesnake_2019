@@ -21,14 +21,6 @@ def static(path):
 def start():
     # TODO: Do things with data
     data = bottle.request.json
-    global board_width, board_height
-    global game_board
-    board_width = data.get('width')
-    board_height = data.get('height')
-    #create empty game board.
-    game_board = np.empty([board_height, board_width], dtype='string')
-    game_board[:] = '-'
-
     # TODO: Do things with data
     #print(json.dumps(data))
 
@@ -52,12 +44,20 @@ def move():
 
 
 def board_output(data):
+    global board_width, board_height
+    #declare game_board as global in method so it can be updated
+    global game_board
+    board_width = data.get('width')
+    board_height = data.get('height')
+    #create empty game board.
+    game_board = np.empty([board_height, board_width], dtype='string')
+    game_board[:] = '-'
     snake_data = data.get('snakes')['data']
     snakes = []
     food_data = data.get('food')['data']
     foods = []
     #declare game_board as global in method so it can be updated
-    global game_board
+    #global game_board
 
     for food in food_data:
         x = food['x']
@@ -77,6 +77,8 @@ def board_output(data):
         i = i+1
     #print current state of game board
     print(game_board)
+    #reset board after print output of move.
+    game_board[:] = '-'
 
 @bottle.post('/end')
 def end():

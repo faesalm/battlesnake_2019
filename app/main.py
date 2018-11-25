@@ -20,12 +20,12 @@ def start():
 @bottle.post('/move')
 def move():
     data = bottle.request.json
-    directions = checkMove(data)
+    directions = check_move(data)
     direction = random.choice(directions)
     return MoveResponse(direction)  
 
 #Returns list of valid directions to travel (check wall and check self)
-def checkMove(data):
+def check_move(data):
     
     me = data.get('you')
     headx = me['body']['data'][0]['x']
@@ -39,13 +39,13 @@ def checkMove(data):
 
     snek = {'head': {'x': headx, 'y': heady},'trunk': my_trunk}
     directions = ['up', 'down', 'left', 'right']
-    directions = checkWalls(directions, snek, data)
+    directions = check_walls(directions, snek, data)
 
-    directions = checkSelf(directions, snek, my_trunk)
+    directions = check_self(directions, snek, my_trunk)
     return directions
 
 #returns list of valid directions
-def checkSelf(directions, snek, my_trunk):
+def check_self(directions, snek, my_trunk):
     for segment in my_trunk:
         trunkx = segment['x']
         trunky = segment['y']
@@ -68,7 +68,7 @@ def checkSelf(directions, snek, my_trunk):
                 directions.remove('up')
     return directions
 
-def checkWalls(directions, snek, data):
+def check_walls(directions, snek, data):
 
     if snek['head']['x'] == 0:
         if 'left' in directions:

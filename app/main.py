@@ -23,7 +23,7 @@ def move():
 	
 	sorted_food = find_closest_food(data)
 	direction = go_to_food(data, sorted_food[0], directions)
-        board_output(data) 
+	board_output(data) 
 	return MoveResponse(direction)
 
 
@@ -112,22 +112,26 @@ def go_to_food(data, closest_food, directions):
 	
 	# food to left of head
 	if head_x > food_x:
+		print '1'
 		if head_y == food_y and 'left' in directions: direction = 'left'
-		elif head_y < food_y and 'up' in directions: direction = 'up'
-		elif head_y > food_y and 'down' in directions: direction = 'down'
+		elif head_y < food_y and 'down' in directions: direction = 'down'
+		elif head_y > food_y and 'up' in directions: direction = 'up'
 		else: direction = 'right'
 	# food to right of head:
 	elif head_x < food_x:
+		print '2'
 		if head_y == food_y and 'right' in directions: direction = 'right'
-		elif head_y < food_y and 'up' in directions: direction = 'up'
-		elif head_y > food_y and 'down' in directions: direction = 'down'
+		elif head_y < food_y and 'down' in directions: direction = 'down'
+		elif head_y > food_y and 'up' in directions: direction = 'up'
 		else: direction = 'left'
 	# else head_x == food_x, food same column
 	else:
-		if head_y < food_y and 'up' in directions: direction = 'up'
-		elif head_y > food_y and 'down' in directions: direction = 'down'
+		print '3'
+		if head_y < food_y and 'down' in directions: direction = 'down'
+		elif head_y > food_y and 'up' in directions: direction = 'up'
 		elif 'right' in directions: direction = 'right'
 		else: direction = 'left'
+	print direction
 	return direction
 
 

@@ -19,7 +19,7 @@ def start():
 @bottle.post('/move')
 def move():
 	data = bottle.request.json
-	directions = ['up', 'down', 'left', 'right']
+	directions = check_move(data)
 
 	sorted_food = find_closest_food(data)
 	direction = go_to_food(data, sorted_food[0], directions)
@@ -172,21 +172,21 @@ def go_to_food(data, closest_food, directions):
 		if head_y == food_y and 'left' in directions: direction = 'left'
 		elif head_y < food_y and 'down' in directions: direction = 'down'
 		elif head_y > food_y and 'up' in directions: direction = 'up'
-		else: direction = 'right'
+		else: direction = direction
 	# food to right of head:
 	elif head_x < food_x:
 		print '2'
 		if head_y == food_y and 'right' in directions: direction = 'right'
 		elif head_y < food_y and 'down' in directions: direction = 'down'
 		elif head_y > food_y and 'up' in directions: direction = 'up'
-		else: direction = 'left'
+		else: direction = direction
 	# else head_x == food_x, food same column
 	else:
 		print '3'
 		if head_y < food_y and 'down' in directions: direction = 'down'
 		elif head_y > food_y and 'up' in directions: direction = 'up'
 		elif 'right' in directions: direction = 'right'
-		else: direction = 'left'
+		else: direction = direction
 	print direction
 	return direction
 

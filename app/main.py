@@ -21,100 +21,51 @@ def start():
 def move():
     data = bottle.request.json
     directions = checkMove(data)
-    #print 'directions in move', 
-    #print directions,
     direction = random.choice(directions)
-    #print direction
-	#print direction
-    return MoveResponse(direction)
-    #return direction
-    
+    return MoveResponse(direction)  
 
 #Returns list of valid directions to travel (check wall and check self)
 def checkMove(data):
-    #taken from Chelsea's repo from last year
-    #perhaps this should go into main so that way we could pass snake info to our diff methods without having to rewrite this dict each time
-   
+    
     me = data.get('you')
     headx = me['body']['data'][0]['x']
     heady = me['body']['data'][0]['y']
     head = (headx, heady)
 
     trunk_length = len(me['body']['data'])
-   # print body_length
     my_trunk = []
     if trunk_length>2:
-       # my_trunk.extend(me['body']['data'][1:])
         my_trunk.extend(me.get('body')['data'][1:])
 
-    print my_trunk
-    #tailx = me['body']['data'][-1]['x']
-    #taily = me['body']['data'][-1]['y']
-    #tail = (tailx, taily)
-
     snek = {'head': {'x': headx, 'y': heady},'trunk': my_trunk}
-    #, 'tail': {'x': tailx, 'y': taily}}
-    #print snek
-    
     directions = ['up', 'down', 'left', 'right']
     directions = checkWalls(directions, snek, data)
 
-    print 'after checkwalls:',
-    print directions
     directions = checkSelf(directions, snek, my_trunk)
-    print "after checkself:",
-    print directions
-    #Only need apply if directions has not been accounted for
-    
-    #directions = ['right']
     return directions
 
 #returns list of valid directions
 def checkSelf(directions, snek, my_trunk):
-    print 'directions in checkself is:', directions
-    i = 0
     for segment in my_trunk:
-        print i
         trunkx = segment['x']
         trunky = segment['y']
        
-        #sometimes removes stuff even when it shouldnt
-        print 'snek: ',
-        print snek['head']['x'],  snek['head']['y']
-        print 'trunk',
-        print trunkx, trunky
         #check right
         if snek['head']['x']+1 == trunkx and trunky == snek['head']['y']:
-            print 'right should be removed, if in list.',
             if 'right' in directions:
-                print 'right is in directions,'
                 directions.remove('right')
-                print 'directions is now', directions
-		#check left
+      	#check left
         if snek['head']['x']-1 == trunkx and trunky == snek['head']['y']:
-            print 'left should be removed, if in list.',
             if 'left' in directions:
-                print 'left in directions, directions now: ',
                 directions.remove('left')
-                print 'directions now: ', directions
-	    #check down
+        #check down
         if snek['head']['y']+1 == trunky and trunkx == snek['head']['x']:
-            print 'down should be removed, if in list. ',
             if 'down' in directions: 
-                print 'down in directions, directions now: ',
                 directions.remove('down')
-                print directions
-	    #check up
+        #check up
         if snek['head']['y']-1 == trunky and trunkx == snek['head']['x']:
-            print 'up should be removed, if in list. ',
             if 'up' in directions:
-                print 'up in directions, directions now: ',
                 directions.remove('up')
-                print directions
-        print ' '
-        i=i+1
-    print "in checkself: ",
-    print directions
     return directions
 
 def checkWalls(directions, snek, data):
@@ -122,22 +73,15 @@ def checkWalls(directions, snek, data):
     if snek['head']['x'] == 0:
         if 'left' in directions:
             directions.remove('left')
-       # print directions
     if snek['head']['y'] == 0:
-       # print 'at y min',
        if 'up' in directions:
             directions.remove('up')
-        #print directions
     if snek['head']['x'] == data.get('width')-1:
-        #print 'at x max',
         if 'right' in directions:
             directions.remove('right')
-        #print directions
     if snek['head']['y'] == data.get('height')-1:
-        #print 'at y max',
         if 'down' in directions:
             directions.remove('down')
-        #print directions
     return directions
 
 

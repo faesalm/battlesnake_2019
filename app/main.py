@@ -30,7 +30,7 @@ def move():
     #return direction
     
 
-#Returns list of valid directions to travel
+#Returns list of valid directions to travel (check wall and check self)
 def checkMove(data):
     #taken from Chelsea's repo from last year
     #perhaps this should go into main so that way we could pass snake info to our diff methods without having to rewrite this dict each time
@@ -58,6 +58,7 @@ def checkMove(data):
     
     directions = ['up', 'down', 'left', 'right']
     directions = checkWalls(directions, snek, data)
+
     print 'after checkwalls:',
     print directions
     directions = checkSelf(directions, snek, my_trunk)
@@ -70,25 +71,48 @@ def checkMove(data):
 
 #returns list of valid directions
 def checkSelf(directions, snek, my_trunk):
+    print 'directions in checkself is:', directions
+    i = 0
     for segment in my_trunk:
+        print i
         trunkx = segment['x']
         trunky = segment['y']
+       
+        #sometimes removes stuff even when it shouldnt
+        print 'snek: ',
+        print snek['head']['x'],  snek['head']['y']
+        print 'trunk',
+        print trunkx, trunky
         #check right
-        if snek['head']['x']+1 == trunkx:
+        if snek['head']['x']+1 == trunkx and trunky == snek['head']['y']:
+            print 'right should be removed, if in list.',
             if 'right' in directions:
+                print 'right is in directions,'
                 directions.remove('right')
+                print 'directions is now', directions
 		#check left
-        if snek['head']['x']-1 == trunkx:
+        if snek['head']['x']-1 == trunkx and trunky == snek['head']['y']:
+            print 'left should be removed, if in list.',
             if 'left' in directions:
-		        directions.remove('left')
+                print 'left in directions, directions now: ',
+                directions.remove('left')
+                print 'directions now: ', directions
 	    #check down
-        if snek['head']['y']+1 == trunky:
+        if snek['head']['y']+1 == trunky and trunkx == snek['head']['x']:
+            print 'down should be removed, if in list. ',
             if 'down' in directions: 
-	            directions.remove('down')
+                print 'down in directions, directions now: ',
+                directions.remove('down')
+                print directions
 	    #check up
-        if snek['head']['y']-1 == trunky:
+        if snek['head']['y']-1 == trunky and trunkx == snek['head']['x']:
+            print 'up should be removed, if in list. ',
             if 'up' in directions:
+                print 'up in directions, directions now: ',
                 directions.remove('up')
+                print directions
+        print ' '
+        i=i+1
     print "in checkself: ",
     print directions
     return directions

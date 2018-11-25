@@ -53,11 +53,11 @@ def board_output(data):
     game_board = np.empty([board_height, board_width], dtype='string')
     game_board[:] = '-'
     snake_data = data.get('snakes')['data']
+    #print(snake_data)
     snakes = []
     food_data = data.get('food')['data']
     foods = []
     #declare game_board as global in method so it can be updated
-    #global game_board
 
     for food in food_data:
         x = food['x']
@@ -68,12 +68,21 @@ def board_output(data):
     i = 1
     for snake in snakes:
         print('Snake '+str(i)+':')
+        j = 0
         for segment in snake:
             x = segment.get('x')
             y = segment.get('y')
             print 'X: '+str(x)
             print 'Y: '+str(y)+'\n'
-            game_board[y][x] = 'X'
+            #Set head
+            if j == 0:
+                game_board[y][x] = 'H'
+            #Set tail
+            elif j == len(snake)-1:
+                game_board[y][x] = 'T'
+            else:
+                game_board[y][x] = 'X'
+            j = j+1
         i = i+1
     #print current state of game board
     print(game_board)

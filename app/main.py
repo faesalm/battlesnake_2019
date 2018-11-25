@@ -1,13 +1,12 @@
 import bottle
 import os
 import random
-
+import numpy as np
 from api import *
 
 @bottle.route('/')
 def static():
 	return "the server is running"
-
 
 @bottle.route('/static/<path:path>')
 def static(path):
@@ -15,7 +14,7 @@ def static(path):
 
 @bottle.post('/start')
 def start():
-	return StartResponse("#00ff00")
+  return StartResponse("#00ff00")
 
 @bottle.post('/move')
 def move():
@@ -24,22 +23,66 @@ def move():
 	
 	sorted_food = find_closest_food(data)
 	direction = go_to_food(data, sorted_food[0], directions)
-	
-	print direction
+  
 	return MoveResponse(direction)
 
+
+def board_output(data):
+    global board_width, board_height
+    #declare game_board as global in method so it can be updated
+    global game_board
+    board_width = data.get('width')
+    board_height = data.get('height')
+    #create empty game board.
+    game_board = np.empty([board_height, board_width], dtype='string')
+    game_board[:] = '-'
+    snake_data = data.get('snakes')['data']
+    #print(snake_data)
+    snakes = []
+    food_data = data.get('food')['data']
+    foods = []
+    #declare game_board as global in method so it can be updated
+
+    for food in food_data:
+        x = food['x']
+        y = food['y']
+        game_board[y][x] = 'F'
+    for data in snake_data:
+        snakes.append(data.get('body')['data'])   
+    i = 1
+    for snake in snakes:
+        print('Snake '+str(i)+':')
+        j = 0
+        for segment in snake:
+            x = segment.get('x')
+            y = segment.get('y')
+            print 'X: '+str(x)
+            print 'Y: '+str(y)+'\n'
+            #Set head
+            if j == 0:
+                game_board[y][x] = 'H'
+            #Set tail
+            elif j == len(snake)-1:
+                game_board[y][x] = 'T'
+            else:
+                game_board[y][x] = 'X'
+            j = j+1
+        i = i+1
+    #print current state of game board
+    print(game_board)
+    #reset board after print output of move.
+    game_board[:] = '-'
 
 @bottle.post('/end')
 def end():
 	data = bottle.request.json
-
-	# TODO: Any cleanup that needs to be done for this game based on the data
-	print json.dumps(data)
+    # TODO: Any cleanup that needs to be done for this game based on the data
+    #print json.dumps(data)
 
 
 @bottle.post('/ping')
 def ping():
-	return "Alive"
+  return "Alive"
 	
 # return list of dicts of closest foods in order
 # format: [{'y': 7, 'x': 11, 'dist': 9}, {'y': 1, 'x': 5, 'dist': 13}]
@@ -91,12 +134,9 @@ def go_to_food(data, closest_food, directions):
 		elif 'right' in directions: direction = 'right'
 		else: direction = 'left'
 	return direction
-	
-def board_output():
-	return 0
+
 
 # Expose WSGI app (so gunicorn can find it)
-
 application = bottle.default_app()
 
 if __name__ == '__main__':

@@ -28,108 +28,108 @@ def move():
 
 #Returns list of valid directions to travel (check wall and check self)
 def check_move(data):
-    me = data.get('you')
-    headx = me['body']['data'][0]['x']
-    heady = me['body']['data'][0]['y']
-    head = (headx, heady)
+	me = data.get('you')
+	headx = me['body']['data'][0]['x']
+	heady = me['body']['data'][0]['y']
+	head = (headx, heady)
 
-    trunk_length = len(me['body']['data'])
-    my_trunk = []
-    if trunk_length>2:
-        my_trunk.extend(me.get('body')['data'][1:])
+	trunk_length = len(me['body']['data'])
+	my_trunk = []
+	if trunk_length>2:
+		my_trunk.extend(me.get('body')['data'][1:])
 
-    snek = {'head': {'x': headx, 'y': heady},'trunk': my_trunk}
-    directions = ['up', 'down', 'left', 'right']
-    directions = check_walls(directions, snek, data)
+	snek = {'head': {'x': headx, 'y': heady},'trunk': my_trunk}
+	directions = ['up', 'down', 'left', 'right']
+	directions = check_walls(directions, snek, data)
 
-    directions = check_self(directions, snek, my_trunk)
-    return directions
+	directions = check_self(directions, snek, my_trunk)
+	return directions
 
 #returns list of valid directions
 def check_self(directions, snek, my_trunk):
-    for segment in my_trunk:
-        trunkx = segment['x']
-        trunky = segment['y']
-       
-        #check right
-        if snek['head']['x']+1 == trunkx and trunky == snek['head']['y']:
-            if 'right' in directions:
-                directions.remove('right')
-      	#check left
-        if snek['head']['x']-1 == trunkx and trunky == snek['head']['y']:
-            if 'left' in directions:
-                directions.remove('left')
-        #check down
-        if snek['head']['y']+1 == trunky and trunkx == snek['head']['x']:
-            if 'down' in directions: 
-                directions.remove('down')
-        #check up
-        if snek['head']['y']-1 == trunky and trunkx == snek['head']['x']:
-            if 'up' in directions:
-                directions.remove('up')
-    return directions
+	for segment in my_trunk:
+		trunkx = segment['x']
+		trunky = segment['y']
+	   
+		#check right
+		if snek['head']['x']+1 == trunkx and trunky == snek['head']['y']:
+			if 'right' in directions:
+				directions.remove('right')
+		#check left
+		if snek['head']['x']-1 == trunkx and trunky == snek['head']['y']:
+			if 'left' in directions:
+				directions.remove('left')
+		#check down
+		if snek['head']['y']+1 == trunky and trunkx == snek['head']['x']:
+			if 'down' in directions: 
+				directions.remove('down')
+		#check up
+		if snek['head']['y']-1 == trunky and trunkx == snek['head']['x']:
+			if 'up' in directions:
+				directions.remove('up')
+	return directions
 
 def check_walls(directions, snek, data):
-    if snek['head']['x'] == 0:
-        if 'left' in directions:
-            directions.remove('left')
-    if snek['head']['y'] == 0:
-       if 'up' in directions:
-            directions.remove('up')
-    if snek['head']['x'] == data.get('width')-1:
-        if 'right' in directions:
-            directions.remove('right')
-    if snek['head']['y'] == data.get('height')-1:
-        if 'down' in directions:
-            directions.remove('down')
-    return directions
+	if snek['head']['x'] == 0:
+		if 'left' in directions:
+			directions.remove('left')
+	if snek['head']['y'] == 0:
+	   if 'up' in directions:
+			directions.remove('up')
+	if snek['head']['x'] == data.get('width')-1:
+		if 'right' in directions:
+			directions.remove('right')
+	if snek['head']['y'] == data.get('height')-1:
+		if 'down' in directions:
+			directions.remove('down')
+	return directions
  
 def board_output(data):
-    #declare game_board as global in method so it can be updated
-    board_width = data.get('width')
-    board_height = data.get('height')
-    #create empty game board.
-    game_board = np.empty([board_height, board_width], dtype='string')
-    game_board[:] = '-'
-    snake_data = data.get('snakes')['data']
-    #print(snake_data)
-    snakes = []
-    food_data = data.get('food')['data']
-    foods = []
-    #declare game_board as global in method so it can be updated
+	#declare game_board as global in method so it can be updated
+	board_width = data.get('width')
+	board_height = data.get('height')
+	#create empty game board.
+	game_board = np.empty([board_height, board_width], dtype='string')
+	game_board[:] = '-'
+	snake_data = data.get('snakes')['data']
+	#print(snake_data)
+	snakes = []
+	food_data = data.get('food')['data']
+	foods = []
+	#declare game_board as global in method so it can be updated
 
-    for food in food_data:
-        x = food['x']
-        y = food['y']
-        game_board[y][x] = 'F'
-    for data in snake_data:
-        snakes.append(data.get('body')['data'])   
-    i = 1
-    for snake in snakes:
-        j = 0
-        for segment in snake:
-            x = segment.get('x')
-            y = segment.get('y')
-            #Set head
-            if j == 0:
-                game_board[y][x] = 'H'
-            #Set tail
-            elif j == len(snake)-1:
-                game_board[y][x] = 'T'
-            else:
-                game_board[y][x] = 'X'
-            j = j+1
-        i = i+1
-    #print current state of game board
-    print(game_board)
-    #reset board after print output of move.
-    game_board[:] = '-'
+	for food in food_data:
+		x = food['x']
+		y = food['y']
+		game_board[y][x] = 'F'
+	for data in snake_data:
+		snakes.append(data.get('body')['data'])	  
+	i = 1
+	for snake in snakes:
+		j = 0
+		for segment in snake:
+			x = segment.get('x')
+			y = segment.get('y')
+			#Set head
+			if j == 0:
+				game_board[y][x] = 'H'
+			#Set tail
+			elif j == len(snake)-1:
+				game_board[y][x] = 'T'
+			else:
+				game_board[y][x] = 'X'
+			j = j+1
+		i = i+1
+	#print current state of game board
+	print(game_board)
+	#reset board after print output of move.
+	game_board[:] = '-'
 
 @bottle.post('/end')
 def end():
 	data = bottle.request.json
-    # TODO: Any cleanup that needs to be done for this game based on the data
-    #print json.dumps(data)
+	# TODO: Any cleanup that needs to be done for this game based on the data
+	#print json.dumps(data)
 
 @bottle.post('/ping')
 def ping():
@@ -155,7 +155,7 @@ def find_closest_food(data):
 # return direction that wont kill us and moves towards closest food	
 def go_to_food(data, closest_food, directions):
 	
-	# maybe if len[directions] == 1  then we can skip go_to_food
+	# maybe if len[directions] == 1	 then we can skip go_to_food
 	
 	# we will probably have this somewhere else to avoid redundancy
 	head_x = data['you']['body']['data'][0]['x']

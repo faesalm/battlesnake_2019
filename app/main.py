@@ -21,7 +21,10 @@ def start():
 def move():
 	data = bottle.request.json
 	directions = ['up', 'down', 'left', 'right']
-	direction = 'right'
+	
+	sorted_food = find_closest_food(data)
+	direction = go_to_food(data, sorted_food[0], directions)
+	
 	print direction
 	return MoveResponse(direction)
 
@@ -55,6 +58,40 @@ def find_closest_food(data):
 	sorted_foods = sorted(foods, key=lambda k: k['dist'])
 	return sorted_foods
 
+# return direction that wont kill us and moves towards closest food	
+def go_to_food(data, closest_food, directions):
+	
+	# maybe if len[directions] == 1  then we can skip go_to_food
+	
+	# we will probably have this somewhere else to avoid redundancy
+	head_x = data['you']['body']['data'][0]['x']
+	head_y = data['you']['body']['data'][0]['y']
+	
+	# closest_food will be sorted_foods[0]
+	food_x, food_y = closest_food['x'], closest_food['y']
+	# initialized to a valid direction if all else fails
+	direction = directions[0]
+	
+	# food to left of head
+	if head_x > food_x:
+		if head_y == food_y and 'left' in directions: direction = 'left'
+		elif head_y < food_y and 'up' in directions: direction = 'up'
+		elif head_y > food_y and 'down' in directions: direction = 'down'
+		else: direction = 'right'
+	# food to right of head:
+	elif head_x < food_x:
+		if head_y == food_y and 'right' in directions: direction = 'right'
+		elif head_y < food_y and 'up' in directions: direction = 'up'
+		elif head_y > food_y and 'down' in directions: direction = 'down'
+		else: direction = 'left'
+	# else head_x == food_x, food same column
+	else:
+		if head_y < food_y and 'up' in directions: direction = 'up'
+		elif head_y > food_y and 'down' in directions: direction = 'down'
+		elif 'right' in directions: direction = 'right'
+		else: direction = 'left'
+	return direction
+	
 def board_output():
 	return 0
 

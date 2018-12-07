@@ -4,6 +4,7 @@ import random
 import numpy as np
 from api import *
 import time
+import collections
 
 @bottle.route('/')
 def static():
@@ -19,19 +20,67 @@ def start():
 
 @bottle.post('/move')
 def move():
-        s_time =time.time()
+	s_time =time.time()
 	data = bottle.request.json
-	directions = check_move(data)
-
-	sorted_food = find_closest_food(data)
-	direction = go_to_food(data, sorted_food[0], directions)
-	board_output(data)
-       
-        f_time = time.time() - s_time
-        # if code is too slow
-        if f_time >= 0.2:
-            print("Execution Time: {}ms".format(round(f_time,3)))
+	board = board_output(data)
+	print(board)
+	closest_food = find_closest_food(data)[0]
+	# head tuple
+	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+	path = bfs(board,head, closest_food)
+	direction = return_move(head, path[1])
+	f_time = time.time() - s_time
+	# if code is too slow
+	if f_time >= 0.2:
+		print("Execution Time: {}ms".format(round(f_time,3)*1000))
 	return MoveResponse(direction)
+
+# run bfs to find closest food 
+# return list of tuples (x,y) to food:  [(14, 6), (14, 5), (13, 5), (12, 5)]
+def bfs(grid, start,goal, debug = False):
+	height, width = len(grid),len(grid[0])
+	path = []
+	board = grid 
+	if debug:
+		print goal
+	board[goal['y'],goal['x']] = '*'
+	g = '*'
+	snake = ['H','X','T']
+	clear = '-'
+	queue = collections.deque([[start]])
+	seen = set([start])
+	while queue:
+		path = queue.popleft()
+		x, y = path[-1]
+		if grid[y][x] == g:
+			if debug:
+				for p in path[1:-1]:
+					board [p[1]][p[0]] = 'P'
+				print(board)
+			return path
+		for x2, y2 in ((x+1,y), (x-1,y), (x,y+1), (x,y-1)):
+			if 0 <= x2 < width and 0 <= y2 < height and grid[y2][x2] not in snake and (x2, y2) not in seen:
+				queue.append(path + [(x2, y2)])
+				seen.add((x2, y2))
+	return path
+
+def return_move(head, dest):
+	next_step = dest
+	head_x = head[0]
+	head_y = head[1]
+	path_x = next_step[0]
+	path_y = next_step[1]
+	d = ''
+	if head_x+1 == path_x:
+		d = 'right'
+	if head_x-1 == path_x:
+		d = 'left'
+	if head_y-1 == path_y:
+		d = 'up'
+	if head_y+1 == path_y:
+		d = 'down'
+	return d
+	
 
 #Returns list of valid directions to travel (check wall and check self)
 def check_move(data):
@@ -128,9 +177,9 @@ def board_output(data):
 			j = j+1
 		i = i+1
 	#print current state of game board
-	print(game_board)
+	return game_board
 	#reset board after print output of move.
-	game_board[:] = '-'
+	
 
 @bottle.post('/end')
 def end():

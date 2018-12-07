@@ -6,6 +6,10 @@ from api import *
 import time
 import collections
 
+# health and length threshold to start getting food
+min_health = 30
+min_length = 10
+
 @bottle.route('/')
 def static():
 	return "the server is running"
@@ -22,6 +26,11 @@ def start():
 def move():
 	s_time =time.time()
 	data = bottle.request.json
+	length = data['you']['length']
+	health = data['you']['health']
+	while health > min_health and length > min_length:
+		direction = chase_tail(data)
+		return MoveResponse(direction)
 	board = board_output(data)
 	print(board)
 	closest_food = find_closest_food(data)[0]
@@ -81,6 +90,17 @@ def return_move(head, dest):
 		d = 'down'
 	return d
 	
+def chase_tail(data):
+	board = board_output(data)
+	print(board)
+	# head tuple
+	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+	# tail tuple
+	tail = {"x": data['you']['body']['data'][-1]['x'], "y": data['you']['body']['data'][-1]['y']}
+	
+	path = bfs(board,head, tail)
+	direction = return_move(head, path[1])
+	return direction
 
 #Returns list of valid directions to travel (check wall and check self)
 def check_move(data):

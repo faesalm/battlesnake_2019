@@ -35,10 +35,12 @@ def move():
 		return MoveResponse(direction)
 	'''
 	board = board_output(data)
+	num_board = two_pass(board, data)
+	print(num_board)
 	print(board)
 	closest_food = find_closest_food(data)[0]
 	# head tuple
-	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+	head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
 	path = bfs(board, head, closest_food)
 	direction = return_move(head, path[1])
 	f_time = time.time() - s_time
@@ -105,64 +107,6 @@ def chase_tail(data):
 	direction = return_move(head, path[1])
 	return direction
 '''			
-#Returns list of valid directions to travel (check wall and check self)
-def check_move(data):
-	me = data.get('you')
-	headx = me['body']['data'][0]['x']
-	heady = me['body']['data'][0]['y']
-	head = (headx, heady)
-
-	trunk_length = len(me['body']['data'])
-	my_trunk = []
-	if trunk_length>2:
-		my_trunk.extend(me.get('body')['data'][1:])
-
-	snek = {'head': {'x': headx, 'y': heady},'trunk': my_trunk}
-	directions = ['up', 'down', 'left', 'right']
-	directions = check_walls(directions, snek, data)
-
-	directions = check_self(directions, snek, my_trunk)
-	return directions
-
-# only called by check_move
-def check_self(directions, snek, my_trunk):
-	for segment in my_trunk:
-		trunkx = segment['x']
-		trunky = segment['y']
-	   
-		#check right
-		if snek['head']['x']+1 == trunkx and trunky == snek['head']['y']:
-			if 'right' in directions:
-				directions.remove('right')
-		#check left
-		if snek['head']['x']-1 == trunkx and trunky == snek['head']['y']:
-			if 'left' in directions:
-				directions.remove('left')
-		#check down
-		if snek['head']['y']+1 == trunky and trunkx == snek['head']['x']:
-			if 'down' in directions: 
-				directions.remove('down')
-		#check up
-		if snek['head']['y']-1 == trunky and trunkx == snek['head']['x']:
-			if 'up' in directions:
-				directions.remove('up')
-	return directions
-# only called by check_move
-def check_walls(directions, snek, data):
-	if snek['head']['x'] == 0:
-		if 'left' in directions:
-			directions.remove('left')
-	if snek['head']['y'] == 0:
-	   if 'up' in directions:
-			directions.remove('up')
-	if snek['head']['x'] == data.get('width')-1:
-		if 'right' in directions:
-			directions.remove('right')
-	if snek['head']['y'] == data.get('height')-1:
-		if 'down' in directions:
-			directions.remove('down')
-	return directions
- 
 def board_output(data):
 	#declare game_board as global in method so it can be updated
 	board_width = data.get('width')
@@ -200,8 +144,14 @@ def board_output(data):
 			j = j+1
 		i = i+1
 
-	# two pass algorithm
-	num_board = game_board.copy()
+	#print current state of game board
+	return game_board
+	#reset board after print output of move.
+
+def two_pass(board, data):
+	board_width = data.get('width')
+	board_height = data.get('height')
+	num_board = board.copy()
 	labels = []
 	curr_id = 0
 	labels.append(str(curr_id))
@@ -225,23 +175,18 @@ def board_output(data):
 					num_board[y][x] = smaller # set curr place to min neighbour
 					labels[int(max(neighbours))] = smaller # set label of larger nb to smaller
 					# when a relabel occurs change all other boxes to new label(showing they are all connected)
-					for label in labels: 
-						if labels[int(label)] == max(neighbours): labels[int(label)] = smaller
+					for box in range(len(labels)): 
+						if labels[box] == max(neighbours): labels[box] = smaller
 	# last item of labels list always unused so delete it
 	del labels[-1]
-	print(num_board)
-	print(labels) # for testing
 	# second pass
 	for y in range(board_height):
 		for x in range(board_width):
+			curr = num_board[y][x]
 			# if number on the board is not correct label change to new label
-			if num_board[y][x].isdigit() and labels[int(num_board[y][x])-1] != num_board[y][x]:
-				num_board[y][x] = labels[int(num_board[y][x])]
-
-	print(num_board)
-	#print current state of game board
-	return game_board
-	#reset board after print output of move.
+			if curr.isdigit() and labels[int(curr)] != curr:
+				num_board[y][x] = labels[int(curr)]
+	return num_board
 
 @bottle.post('/end')
 def end():
@@ -269,42 +214,6 @@ def find_closest_food(data):
 	# sort by distance
 	sorted_foods = sorted(foods, key=lambda k: k['dist'])
 	return sorted_foods
-
-# return direction that wont kill us and moves towards closest food	
-def go_to_food(data, closest_food, directions):
-	
-	# maybe if len[directions] == 1	 then we can skip go_to_food
-	
-	# we will probably have this somewhere else to avoid redundancy
-	head_x = data['you']['body']['data'][0]['x']
-	head_y = data['you']['body']['data'][0]['y']
-	
-	# closest_food will be sorted_foods[0]
-	food_x, food_y = closest_food['x'], closest_food['y']
-	# initialized to a valid direction if all else fails
-	direction = directions[0]
-	
-	# food to left of head
-	if head_x > food_x:
-		if head_y == food_y and 'left' in directions: direction = 'left'
-		elif head_y < food_y and 'down' in directions: direction = 'down'
-		elif head_y > food_y and 'up' in directions: direction = 'up'
-		else: direction = direction
-	# food to right of head:
-	elif head_x < food_x:
-		if head_y == food_y and 'right' in directions: direction = 'right'
-		elif head_y < food_y and 'down' in directions: direction = 'down'
-		elif head_y > food_y and 'up' in directions: direction = 'up'
-		else: direction = direction
-	# else head_x == food_x, food same column
-	else:
-		if head_y < food_y and 'down' in directions: direction = 'down'
-		elif head_y > food_y and 'up' in directions: direction = 'up'
-		elif 'right' in directions: direction = 'right'
-		else: direction = direction
-	print direction
-	return direction
-
 
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()

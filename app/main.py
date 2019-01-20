@@ -187,6 +187,20 @@ def two_pass(board, data):
 			if curr.isdigit() and labels[int(curr)] != curr:
 				num_board[y][x] = labels[int(curr)]
 	return num_board
+	
+# takes in a list of foods, board, box_info, and snake and finds out the size of the boxes they're in. 
+# returns a list of foods with slack info
+def food_info(foods, board, box_info, data):
+	new_food = foods
+	snake_size = len(data['you']['body'])
+	# check which box food is in
+	for food in new_food:
+		# box food is in 
+		box = board[food['y'],food['x']]
+		# size of board
+		box_size = box_info[box]
+		food['slack'] = box_size - snake_size
+	return new_food	
 
 @bottle.post('/end')
 def end():

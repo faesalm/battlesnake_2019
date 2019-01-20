@@ -204,7 +204,7 @@ def board_output(data):
 	num_board = game_board.copy()
 	labels = []
 	curr_id = 0
-	labels.append(curr_id)
+	labels.append(str(curr_id))
 	# first pass
 	for y in range(board_height):
 		for x in range(board_width):
@@ -217,18 +217,19 @@ def board_output(data):
 					num_board[y][x] = curr_id
 					curr_id += 1
 					labels.append(str(curr_id))
-				elif len(neighbours) == 1 or neighbours[0] == neighbours[1]:
+				elif len(neighbours) == 1 or int(neighbours[0]) == int(neighbours[1]):
 					num_board[y][x] = neighbours[0]
 				else: # 2 diff neighbours 
 					# set label to smallest neighbour label
-					num_board[y][x] = min(neighbours) # set curr place to min neighbour
-					labels[int(max(neighbours))] = min(neighbours) # set label of larger nb to smaller
+					smaller = labels[int(min(neighbours))]
+					num_board[y][x] = smaller # set curr place to min neighbour
+					labels[int(max(neighbours))] = smaller # set label of larger nb to smaller
 					# when a relabel occurs change all other boxes to new label(showing they are all connected)
-					for box in labels: 
-						if labels[int(box)] == max(neighbours): labels[int(box)] = min(neighbours)
+					for label in labels: 
+						if labels[int(label)] == max(neighbours): labels[int(label)] = smaller
 	# last item of labels list always unused so delete it
 	del labels[-1]
-	
+	print(num_board)
 	print(labels) # for testing
 	# second pass
 	for y in range(board_height):
@@ -236,6 +237,7 @@ def board_output(data):
 			# if number on the board is not correct label change to new label
 			if num_board[y][x].isdigit() and labels[int(num_board[y][x])-1] != num_board[y][x]:
 				num_board[y][x] = labels[int(num_board[y][x])]
+
 	print(num_board)
 	#print current state of game board
 	return game_board

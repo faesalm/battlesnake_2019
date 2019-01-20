@@ -106,7 +106,48 @@ def chase_tail(data):
 	path = bfs(board,head, tail)
 	direction = return_move(head, path[1])
 	return direction
-'''			
+'''	
+boxed_in
+grabs
+
+
+#takes in a board from two_pass and returns a dict w/ unique box labels
+def box_info(num_board):
+     # tally how many times each one shows up
+     #1. find all the unique boxes
+     #2. count all of the times each unique one shows up
+     #3. ignore T X H 
+
+     # if char not equal T X H and not already in dict add to dict and increment count
+    info = {}
+    
+    i = 0
+    board_width = len(num_board)
+    board_height = len(num_board[0])
+
+    print board_width
+    print board_height
+
+    for x in range(board_width):
+        for y in range(board_height):
+            #if num_board[x][y] not in dict, add to dict and incr
+            #if num_board[x][y] in dict, incr 
+            key = num_board[x][y]
+        #   print num_board[x][y]
+        #   print 'x is ', x,
+        #   print 'y ix ', y
+            if key == 'X' or key == 'T' or key == 'H':
+                continue
+            if key in info:
+                info[key] += 1
+            else:
+                info[key] = 1
+    print(info)
+
+    return info
+
+
+
 def board_output(data):
 	#declare game_board as global in method so it can be updated
 	board_width = data.get('width')

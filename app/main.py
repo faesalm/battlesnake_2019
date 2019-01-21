@@ -36,7 +36,9 @@ def move():
 	'''
 	board = board_output(data)
 	num_board = two_pass(board, data)
+	box_info(num_board)
 	print(num_board)
+	
 	print(board)
 	closest_food = find_closest_food(data)[0]
 	# head tuple
@@ -123,20 +125,27 @@ def box_info(num_board):
 
 	print board_width
 	print board_height
-
+	
 	for x in range(board_width):
+		print 'x is: ', x
 		for y in range(board_height):
 			#if num_board[x][y] not in dict, add to dict and incr
 			#if num_board[x][y] in dict, incr 
+			
+			print 'y is', y
 			key = num_board[x][y]
+
 			if key == 'X' or key == 'T' or key == 'H':
 				continue
 			if key in info:
 				info[key] += 1
 			else:
+				print 'key ', key,
+				print 'is being added'
 				info[key] = 1
 		print(info)
-		return info
+		print len(info)
+	return info
 
 def board_output(data):
 	#declare game_board as global in method so it can be updated

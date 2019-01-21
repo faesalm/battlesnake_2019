@@ -36,7 +36,6 @@ def move():
 	'''
 	board = board_output(data)
 	num_board = two_pass(board, data)
-	box_info(num_board)
 	print(num_board)
 	
 	print(board)
@@ -110,41 +109,24 @@ def chase_tail(data):
 	return direction
 '''
 
-#takes in a board from two_pass and returns a dict w/ unique box labels
+#takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):
-	# tally how many times each one shows up
-	# 1. find all the unique boxes
-	# 2. count all of the times each unique one shows up
-	# 3. ignore T X H 
-# if char not equal T X H and not already in dict add to dict and increment count
 	info = {}
 
 	i = 0
 	board_width = len(num_board)
 	board_height = len(num_board[0])
-
-	print board_width
-	print board_height
 	
 	for x in range(board_width):
-		print 'x is: ', x
+		
 		for y in range(board_height):
-			#if num_board[x][y] not in dict, add to dict and incr
-			#if num_board[x][y] in dict, incr 
-			
-			print 'y is', y
 			key = num_board[x][y]
-
 			if key == 'X' or key == 'T' or key == 'H':
 				continue
 			if key in info:
 				info[key] += 1
 			else:
-				print 'key ', key,
-				print 'is being added'
 				info[key] = 1
-		print(info)
-		print len(info)
 	return info
 
 def board_output(data):

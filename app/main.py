@@ -37,9 +37,11 @@ def move():
 	board = board_output(data)
 	num_board = two_pass(board, data)
 	print(num_board)
-	
-	print(board)
-	closest_food = find_closest_food(data)[0]
+	print(box_info(num_board))
+	foods = find_closest_food(data, num_board)
+	print(foods);
+	closest_food = foods[0]
+
 	# head tuple
 	head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
 	path = bfs(board, head, closest_food)
@@ -212,17 +214,7 @@ def two_pass(board, data):
 	
 # takes in a list of foods, board, box_info, and snake and finds out the size of the boxes they're in. 
 # returns a list of foods with slack info
-def food_info(foods, board, box_info, data):
-	new_food = foods
-	snake_size = len(data['you']['body'])
-	# check which box food is in
-	for food in new_food:
-		# box food is in 
-		box = board[food['y'],food['x']]
-		# size of board
-		box_size = box_info[box]
-		food['slack'] = box_size - snake_size
-	return new_food	
+
 
 @bottle.post('/end')
 def end():
@@ -235,22 +227,29 @@ def ping():
   return "Alive"
 	
 # return list of dicts of closest foods in order
-# format: [{'y': 7, 'x': 11, 'dist': 9}, {'y': 1, 'x': 5, 'dist': 13}]
-def find_closest_food(data):
+# format: [{'y': 14, 'x': 11, 'dist': 1, 'slack': 89}, {'y': 7, 'x': 3, 'dist': 14, 'slack': 102}]
+def find_closest_food(data, board):
 	foods = data['food']['data']
 	# food dicts
 	foods = [{'x':food['x'],'y': food['y'], 'dist' : -1} for food in foods]
 	my_head = {'x':data['you']['body']['data'][0]['x'],'y':data['you']['body']['data'][0]['y']}
-	
 	for food in foods:
 		x_dist = abs(food['x'] - my_head['x'])
 		y_dist = abs(food['y'] - my_head['y'])
 		total = x_dist + y_dist 
 		food['dist'] = total
 	# sort by distance
-	sorted_foods = sorted(foods, key=lambda k: k['dist'])
-	return sorted_foods
-
+	snake_size = len(data['you']['body'])
+	# check which box food is in
+	for food in foods:
+		# box food is in 
+		box = board[food['y'],food['x']]
+		# size of board
+		box_size = box_info(board)[box]
+		food['slack'] = box_size - snake_size
+	
+	sorted_foods = sorted(foods, key=lambda k: k['slack'])[::-1]
+	return sorted_foods;	
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
 

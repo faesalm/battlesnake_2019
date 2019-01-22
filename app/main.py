@@ -227,7 +227,7 @@ def ping():
   return "Alive"
 	
 # return list of dicts of closest foods in order
-# format: [{'y': 14, 'x': 11, 'dist': 1, 'slack': 89}, {'y': 7, 'x': 3, 'dist': 14, 'slack': 102}]
+# format: [{'y': 14, 'x': 11, 'dist': 1, 'slack': 102}, {'y': 7, 'x': 3, 'dist': 14, 'slack': 89}]
 def find_closest_food(data, board):
 	foods = data['food']['data']
 	# food dicts
@@ -239,7 +239,7 @@ def find_closest_food(data, board):
 		total = x_dist + y_dist 
 		food['dist'] = total
 	# sort by distance
-	snake_size = len(data['you']['body'])
+	snake_size = len(data['you']['body']['data'])
 	# check which box food is in
 	for food in foods:
 		# box food is in 

@@ -41,7 +41,6 @@ def move():
 	foods = find_closest_food(data, num_board)
 	print(foods);
 	closest_food = foods[0]
-
 	# head tuple
 	head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
 	path = bfs(board, head, closest_food)
@@ -60,6 +59,7 @@ def bfs(grid, start, goal, debug = False):
 	board = grid 
 	if debug:
 		print goal
+	tmp = board[goal['y'],goal['x']]
 	board[goal['y'],goal['x']] = '*'
 	g = '*'
 	snake = ['H','X','T']
@@ -74,12 +74,14 @@ def bfs(grid, start, goal, debug = False):
 				for p in path[1:-1]:
 					board [p[1]][p[0]] = 'P'
 				print(board)
+			board[goal['y'],goal['x']] = tmp
 			return path
 		for x2, y2 in ((x+1,y), (x-1,y), (x,y+1), (x,y-1)):
 			if 0 <= x2 < width and 0 <= y2 < height and grid[y2][x2] not in snake and (x2, y2) not in seen:
 				queue.append(path + [(x2, y2)])
 				seen.add((x2, y2))
-	return path
+	board[goal['y'],goal['x']] = tmp
+	return []
 
 def return_move(head, dest):
 	next_step = dest
@@ -232,12 +234,11 @@ def find_closest_food(data, board):
 	foods = data['food']['data']
 	# food dicts
 	foods = [{'x':food['x'],'y': food['y'], 'dist' : -1} for food in foods]
-	my_head = {'x':data['you']['body']['data'][0]['x'],'y':data['you']['body']['data'][0]['y']}
+	head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
 	for food in foods:
-		x_dist = abs(food['x'] - my_head['x'])
-		y_dist = abs(food['y'] - my_head['y'])
-		total = x_dist + y_dist 
-		food['dist'] = total
+		# use bfs to find food distances
+		dist = len(bfs(board, head, food))-1
+		food['dist'] = dist
 	# sort by distance
 	snake_size = len(data['you']['body']['data'])
 	# check which box food is in
@@ -247,7 +248,6 @@ def find_closest_food(data, board):
 		# size of board
 		box_size = box_info(board)[box]
 		food['slack'] = box_size - snake_size
-	
 	sorted_foods = sorted(foods, key=lambda k: k['slack'])[::-1]
 	return sorted_foods;	
 # Expose WSGI app (so gunicorn can find it)

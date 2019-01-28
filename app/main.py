@@ -249,6 +249,7 @@ def find_closest_food(data, board):
 		box_size = box_info(board)[box]
 		food['slack'] = box_size - snake_size
 	sorted_foods = sorted(foods, key=lambda k: k['slack'])[::-1]
+	sorted_foods = [food for food in sorted_foods if food['dist'] > 0]
 	return sorted_foods;	
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()

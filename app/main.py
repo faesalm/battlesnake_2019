@@ -40,11 +40,15 @@ def move():
 	print(box_info(num_board))
 	foods = find_closest_food(data, num_board)
 	print(foods);
-	closest_food = foods[0]
-	# head tuple
-	head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
-	path = bfs(board, head, closest_food)
-	direction = return_move(head, path[1])
+	if (foods == -1):
+		direction = zigzag()
+	else:	
+		closest_food = foods[0]
+		# head tuple
+		head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
+		path = bfs(board, head, closest_food)
+		direction = return_move(head, path[1])
+
 	f_time = time.time() - s_time
 	# if code is too slow
 	if f_time >= 0.2:
@@ -248,8 +252,14 @@ def find_closest_food(data, board):
 		# size of board
 		box_size = box_info(board)[box]
 		food['slack'] = box_size - snake_size
+	# sort by max slack
 	sorted_foods = sorted(foods, key=lambda k: k['slack'])[::-1]
+	# sort by min dist
+	sorted_foods = sorted(foods, key=lambda k: k['dist'])
+	# get rid of unreachable food
 	sorted_foods = [food for food in sorted_foods if food['dist'] > 0]
+	if (len(sorted_foods) == 0):
+		return -1
 	return sorted_foods;	
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()

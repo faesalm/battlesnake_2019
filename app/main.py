@@ -265,12 +265,38 @@ def find_closest_food(data, board):
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
 
+
+# returns which box the snake belongs to ( currently a list to filter later)
+def snake_info(num_board):
+	global data
+	head = [data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y']]
+	# get surrounding
+	left = get_left(head)
+	right = get_right(head)
+	up = get_up(head)
+	down = get_down(head)
+	
+	# check what is around 
+	directions = [up,down,left,right]	
+	l = []
+	for d in directions:
+		if d != -1:
+			l.append(num_board[d[1]][d[0]])
+		else: 
+			print d
+			print 'not possible'
+	# remove Xs and duplicates 
+	while 'X' in l:
+		l.remove('X')
+	return list(set(l))
+	
+	
 # Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds
 def get_right(point):
 	global data 
 	board_width = data.get('width')
 	board_height = data.get('height') 
-	if point[0] == board_width:
+	if point[0] == board_width-1:
 		return -1
 	return [point[0]+1,point[1]] 
 
@@ -294,7 +320,7 @@ def get_down(point):
 	global data 
 	board_width = data.get('width')
 	board_height = data.get('height') 
-	if point[1] == board_height:
+	if point[1] == board_height-1:
 		return -1
 	return [point[0],point[1]+1]
 

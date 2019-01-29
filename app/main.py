@@ -9,7 +9,7 @@ import collections
 # health and length threshold to start getting food
 min_health = 30
 min_length = 10
-
+global data 
 @bottle.route('/')
 def static():
 	return "the server is running"
@@ -25,6 +25,7 @@ def start():
 @bottle.post('/move')
 def move():
 	s_time =time.time()
+	global data
 	data = bottle.request.json
 	'''
 	length = data['you']['length']
@@ -263,6 +264,39 @@ def find_closest_food(data, board):
 	return sorted_foods;	
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
+
+# Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds
+def get_right(point):
+	global data 
+	board_width = data.get('width')
+	board_height = data.get('height') 
+	if point[0] == board_width:
+		return -1
+	return [point[0]+1,point[1]] 
+
+def get_left(point):
+	global data 
+	board_width = data.get('width')
+	board_height = data.get('height') 
+	if point[0] == 0:
+		return -1
+	return [point[0]-1,point[1]]
+
+def get_up(point):
+	global data 
+	board_width = data.get('width')
+	board_height = data.get('height') 
+	if point[1] == 0:
+		return -1
+	return [point[0],point[1]-1]
+
+def get_down(point):
+	global data 
+	board_width = data.get('width')
+	board_height = data.get('height') 
+	if point[1] == board_height:
+		return -1
+	return [point[0],point[1]+1]
 
 if __name__ == '__main__':
 	bottle.run(

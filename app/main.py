@@ -27,14 +27,13 @@ def move():
 	s_time =time.time()
 	global data
 	data = bottle.request.json
-	'''
 	length = data['you']['length']
 	health = data['you']['health']
 	
-	while health > min_health and length > min_length:
+	while health > min_health and length > min_length and (False):
 		direction = chase_tail(data)
 		return MoveResponse(direction)
-	'''
+	
 	board = board_output(data)
 	num_board = two_pass(board, data)
 	print(num_board)
@@ -104,7 +103,8 @@ def return_move(head, dest):
 	if head_y+1 == path_y:
 		d = 'down'
 	return d
-'''
+
+
 def chase_tail(data):
 	board = board_output(data)
 	print(board)
@@ -116,7 +116,7 @@ def chase_tail(data):
 	path = bfs(board,head, tail)
 	direction = return_move(head, path[1])
 	return direction
-'''
+
 
 #takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):
@@ -218,10 +218,6 @@ def two_pass(board, data):
 			if curr.isdigit() and labels[int(curr)] != curr:
 				num_board[y][x] = labels[int(curr)]
 	return num_board
-	
-# takes in a list of foods, board, box_info, and snake and finds out the size of the boxes they're in. 
-# returns a list of foods with slack info
-
 
 @bottle.post('/end')
 def end():

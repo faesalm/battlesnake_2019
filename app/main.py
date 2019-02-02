@@ -37,7 +37,13 @@ def move():
 	board = board_output(data)
 	num_board = two_pass(board, data)
 	ghost_board = ghost_tail(board)
+	print('Board:')
+	print(board)
+	print('GhostBoard:')
 	print(ghost_board)
+	print('After two_pass:')
+	print(num_board)
+
 	foods = find_closest_food(data, num_board)
 	print(foods);
 	if (foods == -1):
@@ -288,6 +294,7 @@ def snake_info(num_board):
 # returns board with 'G' for every body part that will be gone by time snake gets to it 
 def ghost_tail(board, debug = False):
 	global data
+	new_board = board.copy()
 	body = data['you']['body']['data']
 	# check distance from head to every body part
 	head = (body[0]['x'],body[0]['y'])
@@ -295,7 +302,7 @@ def ghost_tail(board, debug = False):
 	for b in body[2:]:
 		# get distance to body part
 		dest = {'x':b['x'],'y': b['y']}
-		path = bfs(board, head, dest)[1:]
+		path = bfs(new_board, head, dest)[1:]
 		dist = len(path)
 		if debug:
 			print ("distance to:" + str(dest))
@@ -306,9 +313,9 @@ def ghost_tail(board, debug = False):
 		diff = length - loc
 		# body part will be gone if it is closer to tail than distance to it
 		if (diff < dist):
-			board[dest['y']][dest['x']] = 'G'
+			new_board[dest['y']][dest['x']] = 'G'
 		loc +=1
-	return board
+	return new_board
 	
 	
 # Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds

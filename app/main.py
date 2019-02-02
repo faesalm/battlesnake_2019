@@ -43,16 +43,16 @@ def move():
 	print(ghost_board)
 	print('After two_pass:')
 	print(num_board)
-
-	foods = find_closest_food(data, num_board)
+	foods = find_closest_food(data, num_board, ghost_board)
 	print(foods);
 	if (foods == -1):
-		direction = zigzag()
-	else:	
+		direction = chase_tail(data)
+		return MoveResponse(direction)
+	else:
 		closest_food = foods[0]
 		# head tuple
 		head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
-		path = bfs(board, head, closest_food)
+		path = bfs(ghost_board, head, closest_food)
 		direction = return_move(head, path[1])
 
 	f_time = time.time() - s_time
@@ -236,23 +236,23 @@ def ping():
 	
 # return list of dicts of closest foods in order
 # format: [{'y': 14, 'x': 11, 'dist': 1, 'slack': 102}, {'y': 7, 'x': 3, 'dist': 14, 'slack': 89}]
-def find_closest_food(data, board):
+def find_closest_food(data, num_board, ghost_board):
 	foods = data['food']['data']
 	# food dicts
 	foods = [{'x':food['x'],'y': food['y'], 'dist' : -1} for food in foods]
 	head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
 	for food in foods:
 		# use bfs to find food distances
-		dist = len(bfs(board, head, food))-1
+		dist = len(bfs(ghost_board, head, food))-1
 		food['dist'] = dist
 	# sort by distance
 	snake_size = len(data['you']['body']['data'])
 	# check which box food is in
 	for food in foods:
 		# box food is in 
-		box = board[food['y'],food['x']]
+		box = num_board[food['y'],food['x']]
 		# size of board
-		box_size = box_info(board)[box]
+		box_size = box_info(num_board)[box]
 		food['slack'] = box_size - snake_size
 	# sort by max slack
 	sorted_foods = sorted(foods, key=lambda k: k['slack'])[::-1]
@@ -312,7 +312,8 @@ def ghost_tail(board, debug = False):
 		length = data['you']['length']-1
 		diff = length - loc
 		# body part will be gone if it is closer to tail than distance to it
-		if (diff < dist):
+		# special case for tail (diff == 0). This is likely a rule change for 2019 so maybe delete
+		if (diff < dist and diff != 0):
 			new_board[dest['y']][dest['x']] = 'G'
 		loc +=1
 	return new_board

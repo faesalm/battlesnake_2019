@@ -36,8 +36,8 @@ def move():
 	
 	board = board_output(data)
 	num_board = two_pass(board, data)
-	print(num_board)
-	print(box_info(num_board))
+	ghost_board = ghost_tail(board)
+	print(ghost_board)
 	foods = find_closest_food(data, num_board)
 	print(foods);
 	if (foods == -1):
@@ -67,7 +67,6 @@ def bfs(grid, start, goal, debug = False):
 	board[goal['y'],goal['x']] = '*'
 	g = '*'
 	snake = ['H','X','T']
-	clear = '-'
 	queue = collections.deque([[start]])
 	seen = set([start])
 	while queue:
@@ -285,6 +284,31 @@ def snake_info(num_board):
 	while 'X' in l:
 		l.remove('X')
 	return list(set(l))
+
+# returns board with 'G' for every body part that will be gone by time snake gets to it 
+def ghost_tail(board, debug = False):
+	global data
+	body = data['you']['body']['data']
+	# check distance from head to every body part
+	head = (body[0]['x'],body[0]['y'])
+	loc = 2
+	for b in body[2:]:
+		# get distance to body part
+		dest = {'x':b['x'],'y': b['y']}
+		path = bfs(board, head, dest)[1:]
+		dist = len(path)
+		if debug:
+			print ("distance to:" + str(dest))
+			print(path)
+			print(dist)
+		# check if body part will be gone by comparing how far it is to tail with how far it takes to reach it
+		length = data['you']['length']-1
+		diff = length - loc
+		# body part will be gone if it is closer to tail than distance to it
+		if (diff < dist):
+			board[dest['y']][dest['x']] = 'G'
+		loc +=1
+	return board
 	
 	
 # Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds

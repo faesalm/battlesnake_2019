@@ -50,7 +50,7 @@ def move():
 	if (foods == -1):
 		possible_boxes = snake_info(num_board)
 		# if there are two boxes to pick from, move to bigger one
-		if len(possible_boxes > 1):
+		if (len(possible_boxes) > 1):
 			dict = {}
 			for b in possible_boxes:
 				# get box_size
@@ -64,7 +64,8 @@ def move():
 					return MoveResponse(direction)
 		# else escape
 		else:
-			direction = escape(data)
+			box_size = box_info(possible_boxes[0][0])
+			direction = escape(box_size, board)
 			return MoveResponse(direction)
 	else:
 		closest_food = foods[0]
@@ -341,19 +342,16 @@ def snake_info(num_board):
 	# check what is around 
 	directions = [up,down,left,right]	
 	l = []
-	marked = []
+	marked = ['X','T']
 	for d in directions:
-		if d != -1 and num_board[d[1]][d[0]] not in marked:
+		print(d)
+		num = num_board[d[1]][d[0]]
+		if d != -1 and num not in marked:
 			marked.append(num_board[d[1]][d[0]])
-			l.append(num_board[d[1]][d[0]], d)
+			l.append((num_board[d[1]][d[0]], d))
 		else: 
 			print d
 			print 'not possible'
-	# remove Xs and duplicates 
-	while 'X' in l:
-		l.remove('X')
-	while 'T' in l:
-		l.remove('T')
 	return l
 
 # returns board with 'G' for every body part that will be gone by time snake gets to it 

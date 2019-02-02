@@ -29,7 +29,8 @@ def move():
 	data = bottle.request.json
 	length = data['you']['length']
 	health = data['you']['health']
-	
+	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+
 	while health > min_health and length > min_length and (False):
 		direction = chase_tail(data)
 		return MoveResponse(direction)
@@ -45,16 +46,32 @@ def move():
 	print(num_board)
 	foods = find_closest_food(data, num_board, ghost_board)
 	print(foods);
+	# if there is no food reachable
 	if (foods == -1):
-		direction = chase_tail(data)
-		return MoveResponse(direction)
+		possible_boxes = snake_info(num_board)
+		# if there are two boxes to pick from, move to bigger one
+		if len(possible_boxes > 1):
+			dict = {}
+			for b in possible_boxes:
+				# get box_size
+				dict[b[0]] = box_info(num_board)[b[0]]
+			# label of biggest box
+			big_box = max(dict, key=dict.get)
+			for b in possible_boxes:
+				if b[0] == big_box:
+					coord =b[1]
+					direction = return_move(head, coord)
+					return MoveResponse(direction)
+		# else escape
+		else:
+			direction = escape(data)
+			return MoveResponse(direction)
 	else:
 		closest_food = foods[0]
 		# head tuple
 		head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
 		path = bfs(ghost_board, head, closest_food)
 		direction = return_move(head, path[1])
-
 	f_time = time.time() - s_time
 	# if code is too slow
 	if f_time >= 0.2:
@@ -126,7 +143,6 @@ def chase_tail(data):
 #takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):
 	info = {}
-
 	i = 0
 	board_width = len(num_board)
 	board_height = len(num_board[0])
@@ -267,7 +283,7 @@ def find_closest_food(data, num_board, ghost_board):
 application = bottle.default_app()
 
 
-# returns which box the snake belongs to ( currently a list to filter later)
+# returns  list of which boxes the snake belongs to (may be more than 1 for filtering later)
 def snake_info(num_board):
 	global data
 	head = [data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y']]
@@ -280,16 +296,20 @@ def snake_info(num_board):
 	# check what is around 
 	directions = [up,down,left,right]	
 	l = []
+	marked = []
 	for d in directions:
-		if d != -1:
-			l.append(num_board[d[1]][d[0]])
+		if d != -1 and num_board[d[1]][d[0]] not in marked:
+			marked.append(num_board[d[1]][d[0]])
+			l.append(num_board[d[1]][d[0]], d)
 		else: 
 			print d
 			print 'not possible'
 	# remove Xs and duplicates 
 	while 'X' in l:
 		l.remove('X')
-	return list(set(l))
+	while 'T' in l:
+		l.remove('T')
+	return l
 
 # returns board with 'G' for every body part that will be gone by time snake gets to it 
 def ghost_tail(board, debug = False):
@@ -317,8 +337,7 @@ def ghost_tail(board, debug = False):
 			new_board[dest['y']][dest['x']] = 'G'
 		loc +=1
 	return new_board
-	
-	
+
 # Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds
 def get_right(point):
 	global data 

@@ -45,7 +45,7 @@ def move():
 	print('After two_pass:')
 	print(num_board)
 	foods = find_closest_food(data, num_board, ghost_board)
-	print(foods);
+	print(foods)
 	# if there is no food reachable
 	if (foods == -1):
 		possible_boxes = snake_info(num_board)
@@ -282,6 +282,51 @@ def find_closest_food(data, num_board, ghost_board):
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
 
+
+def escape(box_size, game_board):
+	c_list = []
+	head = (data['you']['body']['data'][0]['y'], data['you']['body']['data'][0]['x'])
+	body = []
+	body.extend(data['you']['body']['data'][1:])
+	if len(body) < box_size:
+		box_size = len(body)
+	for segment in range(box_size):
+		c_list.append(body[:-segment])
+
+	curr = 0
+	# get closest C location with a valid bfs path
+	while curr != len(c_list)-1:
+		path = bfs(game_board, head, c_list[curr])
+		curr += 1
+		if len(path) != 0:
+			break
+	escape_loc = c_list[curr-1]
+	# bfs to c point from squares adj to head 
+	escape_routes = []
+	adj = []
+	adj.append(get_left(head))
+	adj.append(get_right(head))
+	adj.append(get_up(head))
+	adj.append(get_down(head))
+	for coord in adj:
+		# might need to check for more than just 'X' spots in the future
+		if game_board[coord[1]][coord[0]] == 'X':
+			adj.remove(coord)
+		# test bfs paths
+		route = bfs(game_board, coord, escape_loc)
+		if len(route) == 0:
+			adj.remove(coord)
+		else:
+			# append length of valid path and its direction to take for path
+			escape_routes.append((len(route), coord))
+	# testing
+	if len(escape_routes) != 0:
+		# sort paths by length
+		escape_routes = escape_routes.sort(key = lambda x: x[0])
+	else:
+		print('no way out')
+	# returns coord of first step in longest valid path
+	return escape_routes[:-1]	
 
 # returns  list of which boxes the snake belongs to (may be more than 1 for filtering later)
 def snake_info(num_board):

@@ -44,7 +44,12 @@ def move():
 	print(ghost_board)
 	print('After two_pass:')
 	print(num_board)
-	foods = find_closest_food(data, num_board, ghost_board)
+	foods = find_closest_food(data, num_board, ghost_board)[:]
+	foods = [food for food in foods if food['slack'] <= 0]
+
+	bad_foods = find_closest_food(data, num_board, ghost_board)[:]
+	bad_foods =[food for food in bad_foods if food['slack'] > 0]
+
 	print(foods)
 	# if there is no food reachable
 	if (foods == -1):
@@ -63,14 +68,17 @@ def move():
 					direction = return_move(head, coord)
 					return MoveResponse(direction)
 		# else escape
-		else:
+		elif (len(possible_boxes) == 1):
 			box_size = box_info(possible_boxes[0][0])
 			direction = escape(box_size, board)
 			return MoveResponse(direction)
+		else: 
+			print('no possible boxes')
 	else:
-		closest_food = foods[0]
-		# head tuple
-		head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
+		if len(foods) != 0:
+			closest_food = foods[0]
+		else:
+			closest_food = bad_foods[0]
 		path = bfs(ghost_board, head, closest_food)
 		direction = return_move(head, path[1])
 	f_time = time.time() - s_time
@@ -135,7 +143,6 @@ def chase_tail(data):
 	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
 	# tail tuple
 	tail = {"x": data['you']['body']['data'][-1]['x'], "y": data['you']['body']['data'][-1]['y']}
-	
 	path = bfs(board,head, tail)
 	direction = return_move(head, path[1])
 	return direction
@@ -147,9 +154,7 @@ def box_info(num_board):
 	i = 0
 	board_width = len(num_board)
 	board_height = len(num_board[0])
-	
 	for x in range(board_width):
-		
 		for y in range(board_height):
 			key = num_board[x][y]
 			if key == 'X' or key == 'T' or key == 'H':
@@ -173,7 +178,6 @@ def board_output(data):
 	food_data = data.get('food')['data']
 	foods = []
 	#declare game_board as global in method so it can be updated
-
 	for food in food_data:
 		x = food['x']
 		y = food['y']
@@ -196,7 +200,6 @@ def board_output(data):
 				game_board[y][x] = 'X'
 			j = j+1
 		i = i+1
-
 	#print current state of game board
 	return game_board
 	#reset board after print output of move.
@@ -270,16 +273,11 @@ def find_closest_food(data, num_board, ghost_board):
 		box = num_board[food['y'],food['x']]
 		# size of board
 		box_size = box_info(num_board)[box]
-		food['slack'] = box_size - snake_size
-	# sort by max slack
-	sorted_foods = sorted(foods, key=lambda k: k['slack'])[::-1]
-	# sort by min dist
-	sorted_foods = sorted(foods, key=lambda k: k['dist'])
-	# get rid of unreachable food
-	sorted_foods = [food for food in sorted_foods if food['dist'] > 0]
+		food['slack'] = (box_size - snake_size)* -1
+	sorted_foods = sorted(foods, key= lambda k: (k['dist'], k['slack']))
 	if (len(sorted_foods) == 0):
 		return -1
-	return sorted_foods;	
+	return sorted_foods	
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
 
@@ -293,7 +291,6 @@ def escape(box_size, game_board):
 		box_size = len(body)
 	for segment in range(box_size):
 		c_list.append(body[:-segment])
-
 	curr = 0
 	# get closest C location with a valid bfs path
 	while curr != len(c_list)-1:
@@ -338,7 +335,6 @@ def snake_info(num_board):
 	right = get_right(head)
 	up = get_up(head)
 	down = get_down(head)
-	
 	# check what is around 
 	directions = [up,down,left,right]	
 	l = []

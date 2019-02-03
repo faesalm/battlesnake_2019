@@ -36,7 +36,8 @@ def move():
 		return MoveResponse(direction)
 	
 	board = board_output(data)
-	num_board = two_pass(board, data)
+	ghost_board = ghost_tail(board)
+	num_board = two_pass(ghost_board, data)
 	ghost_board = ghost_tail(board)
 	print('Board:')
 	print(board)
@@ -45,23 +46,23 @@ def move():
 	print('After two_pass:')
 	print(num_board)
 	foods = find_closest_food(data, num_board, ghost_board)[:]
-	foods = [food for food in foods if food['slack'] >= 0]
-
-	bad_foods = find_closest_food(data, num_board, ghost_board)[:]
-	bad_foods =[food for food in bad_foods if food['slack'] < 0]
+	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
 
 	print(foods)
 	# if there is no food reachable
-	if (foods == -1):
+	if len(foods) == 0:
 		possible_boxes = snake_info(num_board)
 		# if there are two boxes to pick from, move to bigger one
 		if (len(possible_boxes) > 1):
+			print 'picking larger box' 
 			dict = {}
 			for b in possible_boxes:
 				# get box_size
 				dict[b[0]] = box_info(num_board)[b[0]]
 			# label of biggest box
 			big_box = max(dict, key=dict.get)
+			print 'bigger box is '
+			print(big_box)
 			for b in possible_boxes:
 				if b[0] == big_box:
 					coord =b[1]
@@ -69,17 +70,18 @@ def move():
 					return MoveResponse(direction)
 		# else escape
 		elif (len(possible_boxes) == 1):
-			box_size = box_info(possible_boxes[0][0])
+			print 'inside one box'
+			box_size = box_info(num_board)[possible_boxes[0][0]]
 			direction = escape(box_size, board)
 			return MoveResponse(direction)
-		else: 
-			print('no possible boxes')
+		
+
 	else:
-		if len(foods) != 0:
-			closest_food = foods[0]
-		else:
-			closest_food = bad_foods[0]
+		closest_food = foods[0]
+		print('closest food is')
+		print(closest_food)
 		path = bfs(ghost_board, head, closest_food)
+		print(path)
 		direction = return_move(head, path[1])
 	f_time = time.time() - s_time
 	# if code is too slow
@@ -284,21 +286,28 @@ application = bottle.default_app()
 
 def escape(box_size, game_board):
 	c_list = []
-	head = (data['you']['body']['data'][0]['y'], data['you']['body']['data'][0]['x'])
-	body = []
-	body.extend(data['you']['body']['data'][1:])
+	body = data['you']['body']['data']
+	# check distance from head to every body part
+	head = (body[0]['x'],body[0]['y'])
+	new_board = game_board.copy()
 	if len(body) < box_size:
+		print 'matching snake and box size' 
 		box_size = len(body)
-	for segment in range(box_size):
-		c_list.append(body[:-segment])
-	curr = 0
+	# mark last box_size (n) of body (in reverse order because closer to tail is better)
+	c_list = body[-box_size::]
+	c_list = c_list[::-1]
+	for c in c_list:
+		new_board[c['y']][c['x']] = 'C'
 	# get closest C location with a valid bfs path
-	while curr != len(c_list)-1:
-		path = bfs(game_board, head, c_list[curr])
-		curr += 1
-		if len(path) != 0:
-			break
-	escape_loc = c_list[curr-1]
+	escape_loc ={}
+	for c in c_list:
+		x_y = {'x':c['x'], 'y':c['y']}
+		path = bfs(game_board,head,x_y)
+		# found closest path 
+		if path != []:
+			escape_loc = c
+			new_board[c['y']][c['x']] = '*'
+			break;
 	# bfs to c point from squares adj to head 
 	escape_routes = []
 	adj = []
@@ -306,25 +315,31 @@ def escape(box_size, game_board):
 	adj.append(get_right(head))
 	adj.append(get_up(head))
 	adj.append(get_down(head))
+	
 	for coord in adj:
+		# if invalid direction
+		if coord == -1:
+			continue
 		# might need to check for more than just 'X' spots in the future
 		if game_board[coord[1]][coord[0]] == 'X':
-			adj.remove(coord)
+			continue
 		# test bfs paths
-		route = bfs(game_board, coord, escape_loc)
+		tup = (coord[0],coord[1])
+		route = bfs(game_board, tup, c)
+		# move along if invalid paths
 		if len(route) == 0:
-			adj.remove(coord)
+			continue
 		else:
 			# append length of valid path and its direction to take for path
 			escape_routes.append((len(route), coord))
 	# testing
 	if len(escape_routes) != 0:
 		# sort paths by length
-		escape_routes = escape_routes.sort(key = lambda x: x[0])
+		escape_routes.sort(key=lambda tup: tup[0])
 	else:
-		print('no way out')
+		print('no way out :(')
 	# returns coord of first step in longest valid path
-	return escape_routes[:-1]	
+	return return_move(head, escape_routes[-1][1])
 
 # returns  list of which boxes the snake belongs to (may be more than 1 for filtering later)
 def snake_info(num_board):
@@ -336,21 +351,19 @@ def snake_info(num_board):
 	up = get_up(head)
 	down = get_down(head)
 	# check what is around 
-	directions = [up,down,left,right]	
+	directions = [up,down,left,right]
 	l = []
 	marked = ['X','T']
 	for d in directions:
-		print(d)
+		if d == -1:
+			continue
 		num = num_board[d[1]][d[0]]
-		if d != -1 and num not in marked:
+		if num not in marked:
 			marked.append(num_board[d[1]][d[0]])
 			l.append((num_board[d[1]][d[0]], d))
-		else: 
-			print d
-			print 'not possible'
 	return l
 
-# returns board with 'G' for every body part that will be gone by time snake gets to it 
+# returns board with 'G' for every body part t hat will be gone by time snake gets to it 
 def ghost_tail(board, debug = False):
 	global data
 	new_board = board.copy()
@@ -373,7 +386,7 @@ def ghost_tail(board, debug = False):
 		# body part will be gone if it is closer to tail than distance to it
 		# special case for tail (diff == 0). This is likely a rule change for 2019 so maybe delete
 		if (diff < dist and diff != 0):
-			new_board[dest['y']][dest['x']] = 'G'
+			new_board[dest['y']][dest['x']] = '-'
 		loc +=1
 	return new_board
 

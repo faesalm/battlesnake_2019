@@ -45,10 +45,10 @@ def move():
 	print('After two_pass:')
 	print(num_board)
 	foods = find_closest_food(data, num_board, ghost_board)[:]
-	foods = [food for food in foods if food['slack'] <= 0]
+	foods = [food for food in foods if food['slack'] >= 0]
 
 	bad_foods = find_closest_food(data, num_board, ghost_board)[:]
-	bad_foods =[food for food in bad_foods if food['slack'] > 0]
+	bad_foods =[food for food in bad_foods if food['slack'] < 0]
 
 	print(foods)
 	# if there is no food reachable
@@ -273,8 +273,8 @@ def find_closest_food(data, num_board, ghost_board):
 		box = num_board[food['y'],food['x']]
 		# size of board
 		box_size = box_info(num_board)[box]
-		food['slack'] = (box_size - snake_size)* -1
-	sorted_foods = sorted(foods, key= lambda k: (k['dist'], k['slack']))
+		food['slack'] = box_size - snake_size
+	sorted_foods = sorted(foods, key= lambda k: (k['dist'], -k['slack']))
 	if (len(sorted_foods) == 0):
 		return -1
 	return sorted_foods	

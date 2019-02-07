@@ -39,16 +39,18 @@ def move():
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(ghost_board, data)
 	ghost_board = ghost_tail(board)
+	'''
 	print('Board:')
 	print(board)
 	print('GhostBoard:')
 	print(ghost_board)
 	print('After two_pass:')
 	print(num_board)
+	'''
 	foods = find_closest_food(data, num_board, ghost_board)[:]
 	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
 
-	print(foods)
+	# print(foods)
 	# if there is no food reachable
 	if len(foods) == 0:
 		possible_boxes = snake_info(num_board)
@@ -62,7 +64,7 @@ def move():
 			# label of biggest box
 			big_box = max(dict, key=dict.get)
 			print 'bigger box is '
-			print(big_box)
+			# print(big_box)
 			for b in possible_boxes:
 				if b[0] == big_box:
 					coord =b[1]
@@ -74,8 +76,7 @@ def move():
 			box_size = box_info(num_board)[possible_boxes[0][0]]
 			direction = escape(box_size, board)
 			return MoveResponse(direction)
-		
-
+	# else foods are reachable
 	else:
 		closest_food = foods[0]
 		print('closest food is')
@@ -127,16 +128,11 @@ def return_move(head, dest):
 	path_x = next_step[0]
 	path_y = next_step[1]
 	d = ''
-	if head_x+1 == path_x:
-		d = 'right'
-	if head_x-1 == path_x:
-		d = 'left'
-	if head_y-1 == path_y:
-		d = 'up'
-	if head_y+1 == path_y:
-		d = 'down'
+	if head_x+1 == path_x: d = 'right'
+	if head_x-1 == path_x: d = 'left'
+	if head_y-1 == path_y: d = 'up'
+	if head_y+1 == path_y: d = 'down'
 	return d
-
 
 def chase_tail(data):
 	board = board_output(data)
@@ -149,11 +145,9 @@ def chase_tail(data):
 	direction = return_move(head, path[1])
 	return direction
 
-
 #takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):
 	info = {}
-	i = 0
 	board_width = len(num_board)
 	board_height = len(num_board[0])
 	for x in range(board_width):
@@ -178,7 +172,6 @@ def board_output(data):
 	#print(snake_data)
 	snakes = []
 	food_data = data.get('food')['data']
-	foods = []
 	#declare game_board as global in method so it can be updated
 	for food in food_data:
 		x = food['x']
@@ -206,6 +199,7 @@ def board_output(data):
 	return game_board
 	#reset board after print output of move.
 
+# takes in board created by board_output and returns a copy divided into numbered boxes
 def two_pass(board, data):
 	board_width = data.get('width')
 	board_height = data.get('height')
@@ -283,13 +277,17 @@ def find_closest_food(data, num_board, ghost_board):
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()
 
-
+# when no food reachable attempt to create a valid bfs path from head to an escape location
+# the escape loc is defined as point that will be clear reachable by bfs
+# we take the longest valid bfs path from beside our head that still reaches this escape loc
 def escape(box_size, game_board):
 	c_list = []
+	escape_loc = -1
 	body = data['you']['body']['data']
 	# check distance from head to every body part
 	head = (body[0]['x'],body[0]['y'])
 	new_board = game_board.copy()
+	# if body is smaller than box size change boxsize to body 
 	if len(body) < box_size:
 		print 'matching snake and box size' 
 		box_size = len(body)
@@ -299,46 +297,51 @@ def escape(box_size, game_board):
 	for c in c_list:
 		new_board[c['y']][c['x']] = 'C'
 	# get closest C location with a valid bfs path
-	escape_loc ={}
 	for c in c_list:
 		x_y = {'x':c['x'], 'y':c['y']}
 		path = bfs(game_board,head,x_y)
 		# found closest path 
 		if path != []:
 			escape_loc = c
-			new_board[c['y']][c['x']] = '*'
-			break;
-	# bfs to c point from squares adj to head 
+			new_board[escape_loc['y']][escape_loc['x']] = '*'
+			break
+	# bfs to escape_loc from squares adj to head 
 	escape_routes = []
+	valid = []
 	adj = []
 	adj.append(get_left(head))
 	adj.append(get_right(head))
 	adj.append(get_up(head))
 	adj.append(get_down(head))
-	
+	# test each bfs path from each coord to escape location
 	for coord in adj:
-		# if invalid direction
+		# if invalid direction (edge of board)
 		if coord == -1:
 			continue
-		# might need to check for more than just 'X' spots in the future
+		# if invalid direction (snake body)
+		# might need to check for more than just 'X' spots in the future(maybe T for other snakes)
 		if game_board[coord[1]][coord[0]] == 'X':
 			continue
-		# test bfs paths
-		tup = (coord[0],coord[1])
-		route = bfs(game_board, tup, c)
-		# move along if invalid paths
-		if len(route) == 0:
-			continue
-		else:
-			# append length of valid path and its direction to take for path
-			escape_routes.append((len(route), coord))
-	# testing
+		# test bfs path if there is an escape location
+		if escape_loc != -1:
+			tup = (coord[0],coord[1])
+			route = bfs(game_board, tup, escape_loc)
+			# move along if bfs does not reach escape_loc
+			if len(route) == 0:
+				continue
+			else:
+				# append length of valid path and its direction to take for path
+				escape_routes.append((len(route), coord))
+		# valid routes are backup in case of no escape route
+		valid.append(coord)
+	# check for an escape route
 	if len(escape_routes) != 0:
 		# sort paths by length
 		escape_routes.sort(key=lambda tup: tup[0])
 	else:
-		print('no way out :(')
-	# returns coord of first step in longest valid path
+		print('no way out')
+		return return_move(head, valid[0])
+	# returns direction of first step in longest valid path
 	return return_move(head, escape_routes[-1][1])
 
 # returns  list of which boxes the snake belongs to (may be more than 1 for filtering later)
@@ -394,33 +397,23 @@ def ghost_tail(board, debug = False):
 def get_right(point):
 	global data 
 	board_width = data.get('width')
-	board_height = data.get('height') 
-	if point[0] == board_width-1:
-		return -1
+	if point[0] == board_width-1: return -1
 	return [point[0]+1,point[1]] 
 
 def get_left(point):
 	global data 
-	board_width = data.get('width')
-	board_height = data.get('height') 
-	if point[0] == 0:
-		return -1
+	if point[0] == 0: return -1
 	return [point[0]-1,point[1]]
 
 def get_up(point):
 	global data 
-	board_width = data.get('width')
-	board_height = data.get('height') 
-	if point[1] == 0:
-		return -1
+	if point[1] == 0: return -1
 	return [point[0],point[1]-1]
 
 def get_down(point):
-	global data 
-	board_width = data.get('width')
+	global data
 	board_height = data.get('height') 
-	if point[1] == board_height-1:
-		return -1
+	if point[1] == board_height-1: return -1
 	return [point[0],point[1]+1]
 
 if __name__ == '__main__':

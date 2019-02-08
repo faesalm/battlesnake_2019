@@ -38,13 +38,16 @@ def move():
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(ghost_board, data)
-
+	enemy_board = enemy_moves(board)
 	print('Board:')
 	print(board)
 	print('GhostBoard:')
 	print(ghost_board)
 	print('After two_pass:')
 	print(num_board)
+	print('After enemy moves:')
+	print(enemy_board)
+	
 	
 	foods = find_closest_food(data, num_board, ghost_board)[:]
 	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
@@ -159,6 +162,29 @@ def box_info(num_board):
 				info[key] = 1
 	return info
 
+# function that takes in board and returns copy of board with potential enemy moves 
+def enemy_moves(board):
+	global data
+	new_board = board.copy()
+	snakes = data['snakes']['data']
+	# change name to official name 
+	emenies = [s for s in snakes if s['name'] != 'ME']
+	for enemy in emenies:
+		head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
+		left = get_left(head)
+		right = get_right(head)
+		up = get_up(head)
+		down = get_down(head)
+		# check what is around 
+		directions = [up,down,left,right]
+		for d in directions:
+			val = board[d[1]][d[0]]
+			# if direction is valid and not body part (assuming they are smart enough not to go there)
+			if d != -1 and val != 'X':
+				# mark board with h = potential head place
+				new_board[d[1]][d[0]] = 'h'				
+	return new_board
+	
 def board_output(data):
 	#declare game_board as global in method so it can be updated
 	board_width = data.get('width')

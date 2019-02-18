@@ -31,10 +31,6 @@ def move():
 	health = data['you']['health']
 	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
 
-	while health > min_health and length > min_length and (False):
-		direction = chase_tail(data)
-		return MoveResponse(direction)
-	
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(ghost_board, data)
@@ -43,6 +39,16 @@ def move():
 	print('GhostBoard:')
 	print(ghost_board)
 	
+	while health > min_health and length > min_length:
+		# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
+		handle_adj_enemies(board)
+		print('chasing tail due to length')
+		direction = chase_tail(data)
+		if direction != -1:
+			return MoveResponse(direction)
+		else:
+			break
+
 	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
 	handle_adj_enemies(board)
 
@@ -51,6 +57,7 @@ def move():
 	print(foods)
 	# if there is no food reachable
 	if len(foods) == 0:
+		'''
 		# try to chase tail
 		print ('chasing tail')
 		direction = chase_tail(data)
@@ -58,6 +65,7 @@ def move():
 			return MoveResponse(direction)
 		print ('cant chase tail')
 		# Do escape box logic if cant chase tail
+		'''
 		possible_boxes = snake_info(num_board)
 		# if there are two boxes to pick from, move to bigger one
 		if (len(possible_boxes) > 1):
@@ -138,19 +146,51 @@ def return_move(head, dest):
 	if head_y+1 == path_y: d = 'down'
 	return d
 
+#bfs to vals beside tail, with each path take the path which is greater than length 1 and shortest.		
 def chase_tail(data):
 	board = board_output(data)
 	print(board)
 	# head tuple
 	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
 	# tail tuple
-	tail = {"x": data['you']['body']['data'][-1]['x'], "y": data['you']['body']['data'][-1]['y']}
-	path = bfs(board,head, tail)
-	# if tail is not reachable
-	if (len(path) == 0):
+	tail = (data['you']['body']['data'][-1]['x'], data['you']['body']['data'][-1]['y'])
+	directions = []
+	directions.append(get_left(tail))
+	directions.append(get_right(tail))
+	directions.append(get_up(tail))
+	directions.append(get_down(tail))
+	# remove invalid moves
+	directions = [d for d in directions if d != -1]
+	paths = []
+	for d in directions:
+		val = board[d[1]][d[0]]
+		if val not in ('X', 'T', 'H'):
+			tup = {'x': d[0], 'y': d[1]}
+			test_path = bfs(board, head, tup)
+			if len(test_path) !=0:
+				if len(test_path) != 2 : 
+					paths.append(test_path)
+	if len(paths) == 0: 
 		return -1
-	direction = return_move(head, path[1])
-	return direction
+	elif len(paths) == 1: 
+		path = paths[0]
+		print(path)
+		direction = return_move(head, path[1])
+		print(direction)
+		return direction
+	else: # more than one potential path to tail
+		path = paths[0]
+		paths = [p for p in paths if len(p) > 2]
+		for p in paths:
+			if len(path) == 2: 
+				path = p
+			else:
+				if len(p) < len(path): path = p
+		print(path)
+		direction = return_move(head, path[1])
+		print(direction)
+		return direction
+
 
 #takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):

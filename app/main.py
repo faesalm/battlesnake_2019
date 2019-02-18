@@ -38,16 +38,13 @@ def move():
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(ghost_board, data)
-	enemy_board = enemy_moves(board)
 	print('Board:')
 	print(board)
 	print('GhostBoard:')
 	print(ghost_board)
-	print('After two_pass:')
-	print(num_board)
-	print('After enemy moves:')
-	print(enemy_board)
 	
+	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
+	handle_adj_enemies(board)
 
 	foods = find_closest_food(data, num_board, ghost_board)
 	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
@@ -171,6 +168,7 @@ def box_info(num_board):
 				info[key] = 1
 	return info
 
+
 # function that takes in board and returns copy of board with potential enemy moves 
 def enemy_moves(board):
 	global data
@@ -192,10 +190,50 @@ def enemy_moves(board):
 			val = board[d[1]][d[0]]
 			# if direction is valid and not body part (assuming they are smart enough not to go there)
 			if val not in ('X', 'H'):
+				# if val is reachable in one move
 				# mark board with h = potential head place
 				new_board[d[1]][d[0]] = 'h'				
 	return new_board
 	
+
+def handle_adj_enemies(board):
+	global data
+	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+	snakes = data['snakes']['data']
+	# change name to official name 
+	enemies = [s for s in snakes if s['name'] != 'me']
+	for enemy in enemies:
+		enemy_head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
+		left = get_left(enemy_head)
+		right = get_right(enemy_head)
+		up = get_up(enemy_head)
+		down = get_down(enemy_head)
+		# check what is around 
+		directions = [up,down,left,right] 
+		# remove invalid moves
+		directions = [d for d in directions if d != -1]
+		for d in directions:
+			val = board[d[1]][d[0]]
+			# if direction is valid and not body part (assuming they are smart enough not to go there)
+			if val not in ('X', 'H'):
+				# check if food is reachable next move
+				val_tup = {'x': d[0], 'y': d[1]}
+				dist = len(bfs(board, head, val_tup))
+				if  dist == 2:
+					# this is a potential enemy move. check if we can move there
+					enemy_length = enemy['length']
+					my_length = data['you']['length']
+					# if they are smaller, go for this spot
+					if enemy_length < my_length:
+						print ("enemy is close and smaller. Trying to kill it")
+						direction = return_move(head, d)
+						return MoveResponse(direction)
+					else: 
+						print ("enemy is bigger. DO NOT GO HERE")
+						board[d[1]][d[0]] = 'X'
+	# no enemy is nearby, return -1
+	return -1 
+
 def board_output(data):
 	#declare game_board as global in method so it can be updated
 	board_width = data.get('width')

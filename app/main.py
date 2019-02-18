@@ -48,13 +48,19 @@ def move():
 	print('After enemy moves:')
 	print(enemy_board)
 	
-	
-	foods = find_closest_food(data, num_board, ghost_board)[:]
-	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
 
+	foods = find_closest_food(data, num_board, ghost_board)
+	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
 	print(foods)
 	# if there is no food reachable
 	if len(foods) == 0:
+		# try to chase tail
+		print ('chasing tail')
+		direction = chase_tail(data)
+		if direction != -1:
+			return MoveResponse(direction)
+		print ('cant chase tail')
+		# Do escape box logic if cant chase tail
 		possible_boxes = snake_info(num_board)
 		# if there are two boxes to pick from, move to bigger one
 		if (len(possible_boxes) > 1):
@@ -143,6 +149,9 @@ def chase_tail(data):
 	# tail tuple
 	tail = {"x": data['you']['body']['data'][-1]['x'], "y": data['you']['body']['data'][-1]['y']}
 	path = bfs(board,head, tail)
+	# if tail is not reachable
+	if (len(path) == 0):
+		return -1
 	direction = return_move(head, path[1])
 	return direction
 
@@ -168,9 +177,8 @@ def enemy_moves(board):
 	new_board = board.copy()
 	snakes = data['snakes']['data']
 	# change name to official name 
-	emenies = [s for s in snakes if s['name'] != 'me']
-	for enemy in emenies:
-		print(enemy)
+	enemies = [s for s in snakes if s['name'] != 'me']
+	for enemy in enemies:
 		head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
 		left = get_left(head)
 		right = get_right(head)
@@ -299,7 +307,7 @@ def find_closest_food(data, num_board, ghost_board):
 		food['slack'] = box_size - snake_size
 	sorted_foods = sorted(foods, key= lambda k: (k['dist'], -k['slack']))
 	if (len(sorted_foods) == 0):
-		return -1
+		return []
 	return sorted_foods	
 # Expose WSGI app (so gunicorn can find it)
 application = bottle.default_app()

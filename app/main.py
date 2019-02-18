@@ -168,19 +168,22 @@ def enemy_moves(board):
 	new_board = board.copy()
 	snakes = data['snakes']['data']
 	# change name to official name 
-	emenies = [s for s in snakes if s['name'] != 'ME']
+	emenies = [s for s in snakes if s['name'] != 'me']
 	for enemy in emenies:
+		print(enemy)
 		head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
 		left = get_left(head)
 		right = get_right(head)
 		up = get_up(head)
 		down = get_down(head)
 		# check what is around 
-		directions = [up,down,left,right]
+		directions = [up,down,left,right] 
+		# remove invalid moves
+		directions = [d for d in directions if d != -1]
 		for d in directions:
 			val = board[d[1]][d[0]]
 			# if direction is valid and not body part (assuming they are smart enough not to go there)
-			if d != -1 and val != 'X':
+			if val not in ('X', 'H'):
 				# mark board with h = potential head place
 				new_board[d[1]][d[0]] = 'h'				
 	return new_board

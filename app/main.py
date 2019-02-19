@@ -41,16 +41,22 @@ def move():
 	
 	while health > min_health and length > min_length:
 		# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
-		handle_adj_enemies(board)
+		direction = handle_adj_enemies(board)
+		print('Board after marking dangerous spots:')
+		print(board)
+		if direction != -1:
+			return MoveResponse(direction)
 		print('chasing tail due to length')
-		direction = chase_tail(data)
+		direction = chase_tail(data,board)
 		if direction != -1:
 			return MoveResponse(direction)
 		else:
 			break
 
 	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
-	handle_adj_enemies(board)
+	direction = handle_adj_enemies(board)
+	if direction != -1:
+			return MoveResponse(direction)
 
 	foods = find_closest_food(data, num_board, ghost_board)
 	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
@@ -147,9 +153,7 @@ def return_move(head, dest):
 	return d
 
 #bfs to vals beside tail, with each path take the path which is greater than length 1 and shortest.		
-def chase_tail(data):
-	board = board_output(data)
-	print(board)
+def chase_tail(data,board):
 	# head tuple
 	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
 	# tail tuple
@@ -174,9 +178,7 @@ def chase_tail(data):
 		return -1
 	elif len(paths) == 1: 
 		path = paths[0]
-		print(path)
 		direction = return_move(head, path[1])
-		print(direction)
 		return direction
 	else: # more than one potential path to tail
 		path = paths[0]
@@ -186,9 +188,7 @@ def chase_tail(data):
 				path = p
 			else:
 				if len(p) < len(path): path = p
-		print(path)
 		direction = return_move(head, path[1])
-		print(direction)
 		return direction
 
 
@@ -258,18 +258,19 @@ def handle_adj_enemies(board):
 			if val not in ('X', 'H'):
 				# check if food is reachable next move
 				val_tup = {'x': d[0], 'y': d[1]}
-				dist = len(bfs(board, head, val_tup))
+				path = bfs(board, head, val_tup)
+				dist = len(path)
 				if  dist == 2:
 					# this is a potential enemy move. check if we can move there
 					enemy_length = enemy['length']
 					my_length = data['you']['length']
 					# if they are smaller, go for this spot
 					if enemy_length < my_length:
-						print ("enemy is close and smaller. Trying to kill it")
-						direction = return_move(head, d)
-						return MoveResponse(direction)
+						print ("enemy is close and smaller. Trying to kill it by going to: " + str(path[1]))
+						direction = return_move(head, path[1])
+						return direction
 					else: 
-						print ("enemy is bigger. DO NOT GO HERE")
+						print ("enemy is bigger. DO NOT GO HERE: " + str(path[1]))
 						board[d[1]][d[0]] = 'X'
 	# no enemy is nearby, return -1
 	return -1 

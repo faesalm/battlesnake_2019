@@ -39,6 +39,12 @@ def move():
 	print('GhostBoard:')
 	print(ghost_board)
 	
+	# gather information on enemies
+	enemy_data = enemy_info(board)
+	print("ENEMY ASSESSSMENT")
+	for e in enemy_data:
+		print(e)
+
 	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
 	direction = handle_adj_enemies(board)
 	# -1 means we are not a step away from any snake, so this logic is skipped
@@ -211,35 +217,9 @@ def box_info(num_board):
 	return info
 
 
-# function that takes in board and returns copy of board with potential enemy moves 
-def enemy_moves(board):
-	global data
-	new_board = board.copy()
-	snakes = data['snakes']['data']
-	# change name to official name 
-	enemies = [s for s in snakes if s['name'] != 'me']
-	for enemy in enemies:
-		head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
-		left = get_left(head)
-		right = get_right(head)
-		up = get_up(head)
-		down = get_down(head)
-		# check what is around 
-		directions = [up,down,left,right] 
-		# remove invalid moves
-		directions = [d for d in directions if d != -1]
-		for d in directions:
-			val = board[d[1]][d[0]]
-			# if direction is valid and not body part (assuming they are smart enough not to go there)
-			if val not in ('X', 'H'):
-				# if val is reachable in one move
-				# mark board with h = potential head place
-				new_board[d[1]][d[0]] = 'h'				
-	return new_board
-	
-
 # function to calculate potential moves of enemies and either attacks that position or marks it with an 'X' as it is dangerous. 
 # skipped if no enemies nearby. Returns list of bad positions. -1 if function is irrelavent
+# TODO: Fix this to handle multiple enemies and make smarter decisions based on enemy_info()
 def handle_adj_enemies(board):
 	global data
 	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
@@ -281,6 +261,50 @@ def handle_adj_enemies(board):
 	if len(bad_directions) > 0:
 		return bad_directions
 	return -1 
+
+# function to gather basic information on all enemies. Decision making is done in other functions
+# Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False}
+def enemy_info(board):
+	global data
+	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+	snakes = data['snakes']['data']
+	# change name to official name 
+	enemies = [s for s in snakes if s['name'] != 'me']
+	enemy_info = []
+	for enemy in enemies:
+		enemy_dict = {}
+		enemy_head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
+		left = get_left(enemy_head)
+		right = get_right(enemy_head)
+		up = get_up(enemy_head)
+		down = get_down(enemy_head)
+		# check what is around 
+		directions = [up,down,left,right] 
+		# remove invalid moves
+		directions = [d for d in directions if d != -1]
+		enemy_dict['name'] = enemy['name'].encode("utf-8")
+		enemy_dict['possible_moves'] = []
+		bad_directions = []
+		enemy_dict['nearby_spots'] = []
+		# calculate if enemy is bigger or same size
+		if enemy['length'] < data['you']['length']:
+			enemy_dict['bigger'] = False
+		else: 
+			enemy_dict['bigger'] = True
+
+		for d in directions:
+			val = board[d[1]][d[0]]
+			# if direction is valid and not body part (assuming they are smart enough not to go there)
+			if val not in ('X', 'H', 'T'):
+				enemy_dict['possible_moves'].append(d)
+				# check if food is reachable next move
+				val_tup = {'x': d[0], 'y': d[1]}
+				path = bfs(board, head, val_tup)
+				dist = len(path)
+				if  dist == 2:
+					enemy_dict['nearby_spots'].append(d) 
+		enemy_info.append(enemy_dict)
+	return enemy_info
 
 def board_output(data):
 	#declare game_board as global in method so it can be updated

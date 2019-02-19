@@ -39,24 +39,26 @@ def move():
 	print('GhostBoard:')
 	print(ghost_board)
 	
+	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
+	direction = handle_adj_enemies(board)
+	# -1 means we are not a step away from any snake, so this logic is skipped
+	if direction != -1:
+			# we cab potentially kill a snake 
+			if direction in ['up','down','left','right']:
+				return MoveResponse(direction)
+			# we can potentially die
+			else: 
+				# modify boards so other functions do not try to go for bad spot
+				for d in direction:
+					ghost_board[d[1]][d[0]] = 'X'
+					board[d[1]][d[0]] = 'X'
 	while health > min_health and length > min_length:
-		# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
-		direction = handle_adj_enemies(board)
-		print('Board after marking dangerous spots:')
-		print(board)
-		if direction != -1:
-			return MoveResponse(direction)
 		print('chasing tail due to length')
 		direction = chase_tail(data,board)
 		if direction != -1:
 			return MoveResponse(direction)
 		else:
 			break
-
-	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
-	direction = handle_adj_enemies(board)
-	if direction != -1:
-			return MoveResponse(direction)
 
 	foods = find_closest_food(data, num_board, ghost_board)
 	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
@@ -236,6 +238,8 @@ def enemy_moves(board):
 	return new_board
 	
 
+# function to calculate potential moves of enemies and either attacks that position or marks it with an 'X' as it is dangerous. 
+# skipped if no enemies nearby. Returns list of bad positions. -1 if function is irrelavent
 def handle_adj_enemies(board):
 	global data
 	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
@@ -252,6 +256,7 @@ def handle_adj_enemies(board):
 		directions = [up,down,left,right] 
 		# remove invalid moves
 		directions = [d for d in directions if d != -1]
+		bad_directions = []
 		for d in directions:
 			val = board[d[1]][d[0]]
 			# if direction is valid and not body part (assuming they are smart enough not to go there)
@@ -271,8 +276,10 @@ def handle_adj_enemies(board):
 						return direction
 					else: 
 						print ("enemy is bigger. DO NOT GO HERE: " + str(path[1]))
-						board[d[1]][d[0]] = 'X'
-	# no enemy is nearby, return -1
+						bad_directions.append(d)
+	# either return list of bad directions or return -1 if we are not close to other snakes (making this function useless)
+	if len(bad_directions) > 0:
+		return bad_directions
 	return -1 
 
 def board_output(data):
@@ -438,7 +445,7 @@ def escape(box_size, game_board):
 		# if invalid direction (snake body)
 		# might need to check for more than just 'X' spots in the future(maybe T for other snakes)
 		if game_board[coord[1]][coord[0]] == 'X':
-			print('removing beause equals x')
+			print('removing because equals x')
 			print(coord)
 			continue
 		# test bfs path if there is an escape location

@@ -34,16 +34,18 @@ def move():
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(ghost_board, data)
-	print('Board:')
-	print(board)
-	print('GhostBoard:')
-	print(ghost_board)
+	if __name__ == '__main__':
+		print('Board:')
+		print(board)
+		print('GhostBoard:')
+		print(ghost_board)
 	
 	# gather information on enemies
 	enemy_data = enemy_info(board)
-	print("ENEMY ASSESSSMENT")
-	for e in enemy_data:
-		print(e)
+	if __name__ == '__main__':
+		print("ENEMY ASSESSSMENT")
+		for e in enemy_data:
+			print(e)
 
 	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
 	direction = handle_adj_enemies(board)

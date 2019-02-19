@@ -27,9 +27,9 @@ def move():
 	s_time =time.time()
 	global data
 	data = bottle.request.json
-	length = data['you']['length']
+	length = len(data['you']['body'])
 	health = data['you']['health']
-	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
@@ -165,9 +165,9 @@ def return_move(head, dest):
 #bfs to vals beside tail, with each path take the path which is greater than length 1 and shortest.		
 def chase_tail(data,board):
 	# head tuple
-	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
+	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	# tail tuple
-	tail = (data['you']['body']['data'][-1]['x'], data['you']['body']['data'][-1]['y'])
+	tail = (data['you']['body'][-1]['x'], data['you']['body'][-1]['y'])
 	directions = []
 	directions.append(get_left(tail))
 	directions.append(get_right(tail))
@@ -224,12 +224,12 @@ def box_info(num_board):
 # TODO: Fix this to handle multiple enemies and make smarter decisions based on enemy_info()
 def handle_adj_enemies(board):
 	global data
-	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
-	snakes = data['snakes']['data']
+	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
+	snakes = data['board']['snakes']
 	# change name to official name 
 	enemies = [s for s in snakes if s['name'] != 'me']
 	for enemy in enemies:
-		enemy_head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
+		enemy_head = (enemy['body'][0]['x'],enemy['body'][0]['y'])
 		left = get_left(enemy_head)
 		right = get_right(enemy_head)
 		up = get_up(enemy_head)
@@ -249,8 +249,8 @@ def handle_adj_enemies(board):
 				dist = len(path)
 				if  dist == 2:
 					# this is a potential enemy move. check if we can move there
-					enemy_length = enemy['length']
-					my_length = data['you']['length']
+					enemy_length = len(enemy['body'])
+					my_length = len(data['you']['body'])
 					# if they are smaller, go for this spot
 					if enemy_length < my_length:
 						print ("enemy is close and smaller. Trying to kill it by going to: " + str(path[1]))
@@ -268,14 +268,14 @@ def handle_adj_enemies(board):
 # Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False}
 def enemy_info(board):
 	global data
-	head = (data['you']['body']['data'][0]['x'],data['you']['body']['data'][0]['y'])
-	snakes = data['snakes']['data']
+	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
+	snakes = data['board']['snakes']
 	# change name to official name 
 	enemies = [s for s in snakes if s['name'] != 'me']
 	enemy_info = []
 	for enemy in enemies:
 		enemy_dict = {}
-		enemy_head = (enemy['body']['data'][0]['x'],enemy['body']['data'][0]['y'])
+		enemy_head = (enemy['body'][0]['x'],enemy['body'][0]['y'])
 		left = get_left(enemy_head)
 		right = get_right(enemy_head)
 		up = get_up(enemy_head)
@@ -289,7 +289,7 @@ def enemy_info(board):
 		bad_directions = []
 		enemy_dict['nearby_spots'] = []
 		# calculate if enemy is bigger or same size
-		if enemy['length'] < data['you']['length']:
+		if len(enemy['body'])< len(data['you']['body']):
 			enemy_dict['bigger'] = False
 		else: 
 			enemy_dict['bigger'] = True
@@ -310,22 +310,22 @@ def enemy_info(board):
 
 def board_output(data):
 	#declare game_board as global in method so it can be updated
-	board_width = data.get('width')
-	board_height = data.get('height')
+	board_width = data['board']['width']
+	board_height = data['board']['height']
 	#create empty game board.
 	game_board = np.empty([board_height, board_width], dtype='string')
 	game_board[:] = '-'
-	snake_data = data.get('snakes')['data']
+	snake_data = data['board']['snakes']
 	#print(snake_data)
 	snakes = []
-	food_data = data.get('food')['data']
+	food_data =  data['board']['food']
 	#declare game_board as global in method so it can be updated
 	for food in food_data:
 		x = food['x']
 		y = food['y']
 		game_board[y][x] = 'F'
 	for data in snake_data:
-		snakes.append(data.get('body')['data'])	  
+		snakes.append(data.get('body'))	  
 	i = 1
 	for snake in snakes:
 		j = 0
@@ -348,8 +348,8 @@ def board_output(data):
 
 # takes in board created by board_output and returns a copy divided into numbered boxes
 def two_pass(board, data):
-	board_width = data.get('width')
-	board_height = data.get('height')
+	board_width = data['board']['width']
+	board_height = data['board']['height']
 	num_board = board.copy()
 	labels = []
 	curr_id = 0
@@ -400,16 +400,16 @@ def ping():
 # return list of dicts of closest foods in order
 # format: [{'y': 14, 'x': 11, 'dist': 1, 'slack': 102}, {'y': 7, 'x': 3, 'dist': 14, 'slack': 89}]
 def find_closest_food(data, num_board, ghost_board):
-	foods = data['food']['data']
+	foods = data['board']['food']
 	# food dicts
 	foods = [{'x':food['x'],'y': food['y'], 'dist' : -1} for food in foods]
-	head = (data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y'])
+	head = (data['you']['body'][0]['x'], data['you']['body'][0]['y'])
 	for food in foods:
 		# use bfs to find food distances
 		dist = len(bfs(ghost_board, head, food))-1
 		food['dist'] = dist
 	# sort by distance
-	snake_size = len(data['you']['body']['data'])
+	snake_size = len(data['you']['body'])
 	# check which box food is in
 	for food in foods:
 		# box food is in 
@@ -430,7 +430,7 @@ application = bottle.default_app()
 def escape(box_size, game_board):
 	c_list = []
 	escape_loc = -1
-	body = data['you']['body']['data']
+	body = data['you']['body']
 	# check distance from head to every body part
 	head = (body[0]['x'],body[0]['y'])
 	new_board = game_board.copy()
@@ -508,7 +508,7 @@ def escape(box_size, game_board):
 # returns  list of which boxes the snake belongs to (may be more than 1 for filtering later)
 def snake_info(num_board):
 	global data
-	head = [data['you']['body']['data'][0]['x'], data['you']['body']['data'][0]['y']]
+	head = [data['you']['body'][0]['x'], data['you']['body'][0]['y']]
 	# get surrounding
 	left = get_left(head)
 	right = get_right(head)
@@ -531,7 +531,7 @@ def snake_info(num_board):
 def ghost_tail(board, debug = False):
 	global data
 	new_board = board.copy()
-	body = data['you']['body']['data']
+	body = data['you']['body']
 	# check distance from head to every body part
 	head = (body[0]['x'],body[0]['y'])
 	loc = 2
@@ -545,7 +545,7 @@ def ghost_tail(board, debug = False):
 			print(path)
 			print(dist)
 		# check if body part will be gone by comparing how far it is to tail with how far it takes to reach it
-		length = data['you']['length']-1
+		length = len(data['you']['body'])-1
 		diff = length - loc
 		# body part will be gone if it is closer to tail than distance to it
 		# special case for tail (diff == 0). This is likely a rule change for 2019 so maybe delete
@@ -557,7 +557,7 @@ def ghost_tail(board, debug = False):
 # Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds
 def get_right(point):
 	global data 
-	board_width = data.get('width')
+	board_width = data['board']['width']
 	if point[0] == board_width-1: return -1
 	return [point[0]+1,point[1]] 
 
@@ -573,7 +573,7 @@ def get_up(point):
 
 def get_down(point):
 	global data
-	board_height = data.get('height') 
+	board_height = data['board']['height']
 	if point[1] == board_height-1: return -1
 	return [point[0],point[1]+1]
 

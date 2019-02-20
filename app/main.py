@@ -56,8 +56,9 @@ def move():
 	nearby_enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	if len(nearby_enemies) != 0:
 		print("THERE IS ENEMY NEARBY")
-		direction = check_collisions(enemy_info,num_board)
-		direction = return_move(direction)
+		direction = check_collisions(enemy_data,num_board)
+		print ("going to " + str(direction))
+		direction = return_move(head,direction)
 		return MoveResponse(direction)
 
 	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
@@ -283,9 +284,9 @@ def handle_adj_enemies(board):
 	return -1 
 
 # returns (x,y) move
-def check_collisions(enemy_info, board):
+def check_collisions(enemy_data, board):
 	# only consider nearby enemies
-	enemies = [e for e in enemy_info if e['nearby_spots'] != []]
+	enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	# directions are our valid moves
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	directions = []

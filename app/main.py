@@ -30,6 +30,7 @@ def move():
 	s_time =time.time()
 	global data
 	data = bottle.request.json
+	name = data['you']['name']
 	turn = data['turn']
 	if log:
 		print("Move for turn: " +str(turn))
@@ -241,10 +242,11 @@ def box_info(num_board):
 # TODO: Fix this to handle multiple enemies and make smarter decisions based on enemy_info()
 def handle_adj_enemies(board):
 	global data
+	name = data['you']['name']
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	snakes = data['board']['snakes']
 	# change name to official name 
-	enemies = [s for s in snakes if s['name'] != 'me']
+	enemies = [s for s in snakes if s['name'] != name]
 	for enemy in enemies:
 		enemy_head = (enemy['body'][0]['x'],enemy['body'][0]['y'])
 		left = get_left(enemy_head)
@@ -373,8 +375,9 @@ def enemy_info(board):
 	global data
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	snakes = data['board']['snakes']
+	name = data['you']['name']
 	# change name to official name 
-	enemies = [s for s in snakes if s['name'] != 'me']
+	enemies = [s for s in snakes if s['name'] != name]
 	enemy_info = []
 	for enemy in enemies:
 		enemy_dict = {}

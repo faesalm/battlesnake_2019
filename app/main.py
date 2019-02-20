@@ -34,16 +34,14 @@ def move():
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(ghost_board, data)
-	if __name__ == '__main__':
-		print('Board:')
-		print(board)
-		print('GhostBoard:')
-		print(ghost_board)
+	print('Board:')
+	print(board)
+	print('GhostBoard:')
+	print(ghost_board)
 	
 	# gather information on enemies
 	enemy_data = enemy_info(board)
-	if __name__ == '__main__':
-		print("ENEMY ASSESSSMENT")
+	print("ENEMY ASSESSSMENT")
 		for e in enemy_data:
 			print(e)
 

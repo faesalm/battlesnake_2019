@@ -20,7 +20,7 @@ def static(path):
 
 @bottle.post('/start')
 def start():
-  return StartResponse("#00ff00")
+  return StartResponse("#40838e")
 
 @bottle.post('/move')
 def move():

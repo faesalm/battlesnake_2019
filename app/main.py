@@ -326,6 +326,45 @@ def check_collisions(enemy_data, board):
 				else: 
 					bad = e['possible_moves'][0]
 					valid.remove(bad)
+
+	"""
+				# we have 2 choices that can potentially cause collision, and they have 2 choices
+			safe_spots = valid
+			# remove spots that lead to boxes that are not escapable
+			box_sizes = ()
+			for spot in valid:
+				spot_num = board[spot[1]][spot[0]]
+				box_size = box_info(board)[spot_num]
+				tup = (spot,box_size)
+				box_sizes.append(tup)
+				direction = escape(box_size,board)
+				if not escapable:
+					safe_spots.remove(spot)
+			box_sizes = sorted(box_sizes)[::-1]
+
+			# if no escapable spots.
+			if safe_spots == []:
+				# if they are smaller: go for the bigger box in nearby_spots
+				for box in box_sizes:
+					if box in e['nearby_spots']:
+						return box[0]
+			# TODO: decide which is better spot if more than one
+			for spot in safe_spots:
+				# if enemy is smaller and box is escapable, attack
+				if not e['bigger'] and spot in e['nearby_spots']:
+					return spot
+
+
+
+	
+	return valid[0]
+	#if we have 2+ moves and they do too
+		# find biggest box of our possible moves and eliminate bad boxes
+			# if they are a smaller snake and the possible collision is in a good box. try it
+			# if we can completely avoid collisions( safe moves )
+			# take it always if they are bigger 
+			# if they are bigger and there are no safe moves go for biggest box
+	"""
 	return valid[0]
 
 # function to gather basic information on all enemies. Decision making is done in other functions

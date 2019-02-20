@@ -10,7 +10,8 @@ import collections
 # health and length threshold to start getting food
 min_health = 30
 min_length = 10
-global data 
+global data
+global escapable 
 log = True 
 @bottle.route('/')
 def static():
@@ -51,10 +52,18 @@ def move():
 		for e in enemy_data:
 			print(e)
 
+	# if enemy nearby, assess
+	nearby_enemies = [e for e in enemy_data if e['nearby_spots'] != []]
+	if len(nearby_enemies) != 0:
+		print("THERE IS ENEMY NEARBY")
+		direction = check_collisions(enemy_info,num_board)
+		direction = return_move(direction)
+		return MoveResponse(direction)
+
 	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
-	direction = handle_adj_enemies(board)
+	#direction = handle_adj_enemies(board)
 	# -1 means we are not a step away from any snake, so this logic is skipped
-	if direction != -1:
+	"""	if direction != -1:
 			# we cab potentially kill a snake 
 			if direction in ['up','down','left','right']:
 				return MoveResponse(direction)
@@ -63,7 +72,7 @@ def move():
 				# modify boards so other functions do not try to go for bad spot
 				for d in direction:
 					ghost_board[d[1]][d[0]] = 'X'
-					board[d[1]][d[0]] = 'X'
+					board[d[1]][d[0]] = 'X'"""
 	while health > min_health and length > min_length:
 		if log:
 			print('chasing tail due to length')
@@ -273,7 +282,10 @@ def handle_adj_enemies(board):
 		return bad_directions
 	return -1 
 
-def check_collisions(enemy_info):
+# returns (x,y) move
+def check_collisions(enemy_info, board):
+	# only consider nearby enemies
+	enemies = [e for e in enemy_info if e['nearby_spots'] != []]
 	# directions are our valid moves
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	directions = []
@@ -287,8 +299,13 @@ def check_collisions(enemy_info):
 	for d in directions:
 		val = board[d[1]][d[0]]
 		if val not in ('X', 'T', 'H'):
-			valid.append(val)
-	#if one move take that move
+			valid.append(d)
+
+	# literally dead next turn
+	if len(valid) == 0:
+		return get_down(head)
+
+	#if we have one move take that move
 	if len(valid) == 1:
 		return valid[0]
 
@@ -298,22 +315,17 @@ def check_collisions(enemy_info):
 		# never move to their one move
 		# test other moves with box info
 	elif len(valid) > 1:
+		# we nave 2 choices that can potentially cause collision, and they have 1 choice
 		for e in enemies:
-			if len(e['possible_moves']) == 1 and :
+			# check if enemy has one possible move and we can reach it
+			if len(e['possible_moves']) == 1 and e['possible_moves'][0] in e['nearby_spots']:
 				if not e['bigger']:
-					return 
-				else: # they are bigger than us
-					# test our potential moves by checking box size
-
-	
-
-	#if we have 2+ moves and they do too
-		# find biggest box of our possible moves and eliminate bad boxes
-			# if they are a smaller snake and the possible collision is in a good box. try it
-			# if we can completely avoid collisions( safe moves )
-			# take it always if they are bigger 
-			# if they are bigger and there are no safe moves go for biggest box
-
+					return e['possible_moves'][0]
+				# they are bigger than us and they WILL move to this spot, so avoid no matter what
+				else: 
+					bad = e['possible_moves'][0]
+					valid.remove(bad)
+	return valid[0]
 
 # function to gather basic information on all enemies. Decision making is done in other functions
 # Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False}
@@ -480,6 +492,7 @@ application = bottle.default_app()
 # we take the longest valid bfs path from beside our head that still reaches this escape loc
 def escape(box_size, game_board):
 	c_list = []
+	global escapable
 	escape_loc = -1
 	body = data['you']['body']
 	# check distance from head to every body part
@@ -543,11 +556,13 @@ def escape(box_size, game_board):
 			valid.append(coord)
 	# check for an escape route
 	if len(escape_routes) != 0:
+		escapable = True
 		# sort paths by length
 		escape_routes.sort(key=lambda tup: tup[0])
 		# returns direction of first step in longest valid path
 		return return_move(head, escape_routes[-1][1])
 	else:
+		escapable = False
 		print('no way out')
 		if len(valid) == 0:
 			print('no valid spot')
@@ -569,7 +584,7 @@ def snake_info(num_board):
 	# check what is around 
 	directions = [up,down,left,right]
 	l = []
-	marked = ['X','T']
+	marked = ['X','T', 'H']
 	for d in directions:
 		if d == -1:
 			continue

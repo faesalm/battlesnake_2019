@@ -272,6 +272,48 @@ def handle_adj_enemies(board):
 		return bad_directions
 	return -1 
 
+def check_collisions(enemy_info):
+	# directions are our valid moves
+	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
+	directions = []
+	valid = []
+	directions.append(get_left(head))
+	directions.append(get_right(head))
+	directions.append(get_up(head))
+	directions.append(get_down(head))
+	# remove invalid moves
+	directions = [d for d in directions if d != -1]
+	for d in directions:
+		val = board[d[1]][d[0]]
+		if val not in ('X', 'T', 'H'):
+			valid.append(val)
+	#if one move take that move
+	if len(valid) == 1:
+		return valid[0]
+
+	# if we have 2+ moves and enemy has one
+	# are they smaller? kill them
+	# are they bigger
+		# never move to their one move
+		# test other moves with box info
+	elif len(valid) > 1:
+		for e in enemies:
+			if len(e['possible_moves']) == 1 and :
+				if not e['bigger']:
+					return 
+				else: # they are bigger than us
+					# test our potential moves by checking box size
+
+	
+
+	#if we have 2+ moves and they do too
+		# find biggest box of our possible moves and eliminate bad boxes
+			# if they are a smaller snake and the possible collision is in a good box. try it
+			# if we can completely avoid collisions( safe moves )
+			# take it always if they are bigger 
+			# if they are bigger and there are no safe moves go for biggest box
+
+
 # function to gather basic information on all enemies. Decision making is done in other functions
 # Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False}
 def enemy_info(board):
@@ -294,7 +336,7 @@ def enemy_info(board):
 		directions = [d for d in directions if d != -1]
 		enemy_dict['name'] = enemy['name'].encode("utf-8")
 		enemy_dict['possible_moves'] = []
-		bad_directions = []
+		# bad_directions = []
 		enemy_dict['nearby_spots'] = []
 		# calculate if enemy is bigger or same size
 		if len(enemy['body'])< len(data['you']['body']):

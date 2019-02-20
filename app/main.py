@@ -10,6 +10,7 @@ import collections
 min_health = 30
 min_length = 10
 global data 
+log = True 
 @bottle.route('/')
 def static():
 	return "the server is running"
@@ -27,21 +28,25 @@ def move():
 	s_time =time.time()
 	global data
 	data = bottle.request.json
+	turn = data['turn']
+	if log:
+		print("Move for turn: " +str(turn))
 	length = len(data['you']['body'])
 	health = data['you']['health']
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
-
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(ghost_board, data)
-	print('Board:')
-	print(board)
-	print('GhostBoard:')
-	print(ghost_board)
+	if log:
+		print('Board:')
+		print(board)
+		print('GhostBoard:')
+		print(ghost_board)
 	
 	# gather information on enemies
 	enemy_data = enemy_info(board)
-	print("ENEMY ASSESSSMENT")
+	if log:
+		print("ENEMY ASSESSSMENT")
 		for e in enemy_data:
 			print(e)
 
@@ -59,7 +64,8 @@ def move():
 					ghost_board[d[1]][d[0]] = 'X'
 					board[d[1]][d[0]] = 'X'
 	while health > min_health and length > min_length:
-		print('chasing tail due to length')
+		if log:
+			print('chasing tail due to length')
 		direction = chase_tail(data,board)
 		if direction != -1:
 			return MoveResponse(direction)
@@ -83,14 +89,16 @@ def move():
 		possible_boxes = snake_info(num_board)
 		# if there are two boxes to pick from, move to bigger one
 		if (len(possible_boxes) > 1):
-			print 'picking larger box' 
+			if log:
+				print 'picking larger box' 
 			dict = {}
 			for b in possible_boxes:
 				# get box_size
 				dict[b[0]] = box_info(num_board)[b[0]]
 			# label of biggest box
 			big_box = max(dict, key=dict.get)
-			print 'bigger box is '
+			if log:
+				print 'bigger box is '
 			print(big_box)
 			for b in possible_boxes:
 				if b[0] == big_box:
@@ -251,11 +259,13 @@ def handle_adj_enemies(board):
 					my_length = len(data['you']['body'])
 					# if they are smaller, go for this spot
 					if enemy_length < my_length:
-						print ("enemy is close and smaller. Trying to kill it by going to: " + str(path[1]))
+						if log:
+							print ("enemy is close and smaller. Trying to kill it by going to: " + str(path[1]))
 						direction = return_move(head, path[1])
 						return direction
 					else: 
-						print ("enemy is bigger. DO NOT GO HERE: " + str(path[1]))
+						if log:
+							print ("enemy is bigger. DO NOT GO HERE: " + str(path[1]))
 						bad_directions.append(d)
 	# either return list of bad directions or return -1 if we are not close to other snakes (making this function useless)
 	if len(bad_directions) > 0:
@@ -434,7 +444,8 @@ def escape(box_size, game_board):
 	new_board = game_board.copy()
 	# if body is smaller than box size change boxsize to body 
 	if len(body) < box_size:
-		print 'matching snake and box size' 
+		if log:
+			print 'matching snake and box size' 
 		box_size = len(body)
 	# mark last box_size (n) of body (in reverse order because closer to tail is better)
 	c_list = body[-box_size::]

@@ -385,79 +385,61 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 	box_sizes.sort(key=lambda x: x[1], reverse = True)
 	print(box_sizes)
 
-	# target spot 
-	goal = -1
-	"""
-		if there are escapable spots and if spot is safe (risky but not guaranteed to die):
-			case 1 (aggressive): if any smaller enemy can go here: 
-				attack (no risk of getting stuck since it is escapable)
-			
-			case 2 (conservative): no enemy can go here: 
-				take this direction
+	# analyize all spots
+	can_kill = []
+	safe = []
+	dangerous = []
 
-			default case (if other 2 return empty): if any bigger enemy can go here:
-				try to avoid, but still go for it if only escapable spot
-			
-			cases are executed in that order (possibly change mode depending on gameplay)
-
-	"""
-
-	# aggressive: try to kill enemies first
-	if mode == 'aggressive':
-		for spot in box_sizes:
+	print ('ANALYZING SPOTS:')
+	for spot in box_sizes:
 			if spot[0] in safe_spots:
-				can_kill = False
 				print('Spot {} is possibly safe with size of {} '.format(spot[0],spot[1]))
 				# pick an escapable potential kill
 				for e in enemies:
 					if spot[0] in e['nearby_spots'] and not e['bigger']:
 							print('Spot {} can kill {}'.format(spot[0],e['name']))
-							can_kill = True
-							goal = spot[0]
-				# if found a spot that can kill, return since this is biggest box
-				if can_kill:
-					break
-				# TODO: consider if we can kill snake
-			else:
-				print('Spot {} is NOT safe '.format(spot[0]))
-		# if target is found 
-		if goal != -1:
-			print('going for {}: safe and can kill an enemy'.format(goal))
-			return goal 
-
-
-		found_safe = False
-		# if not try to find an escapable and not dangerous spot
-		for spot in box_sizes:
-			if spot[0] in safe_spots:
-				danger = False
-				print('Spot {} is possibly safe with size of {} '.format(spot[0],spot[1]))
-				# pick an escapable and not dangerous path
-				for e in enemies:
-					if spot[0] in e['nearby_spots'] and e['bigger']:
+							can_kill.append(spot[0])
+					if spot[0] not in e['nearby_spots'] or not e['bigger']:
+							print('Spot {} is safe'.format(spot[0],e['name']))
+							safe.append(spot[0])
+					else:
 							print('Spot {} is dangerous because of {}'.format(spot[0],e['name']))
-							danger = True
-							goal = spot[0]
-				# if found a spot that can kill, return since this is biggest box
-				if not danger:
-					goal = spot[0]
-					found_safe = True
-					break
+							dangerous.append(spot[0])
 			else:
 				print('Spot {} is NOT safe '.format(spot[0]))
-		# if safe spot found
-		if found_safe:
-			print('going for {}: safe and no one can kill us'.format(goal))
-			return goal
+	print(can_kill)
+	print(safe)
+	print(dangerous)
+
+	if mode == 'aggressive':
+		goal = -1 
+		# aggressive: go for first possible kill that is safe, 
+		for spot in can_kill:
+			if spot in safe:
+				print('going for {}: safe and can kill an enemy'.format(spot))
+				return spot
+		# if no criteria matches this, go for first safe spot: 
+		if len(safe) != 0:
+			print('going for {}: safe'.format(safe[0]))
+			return safe[0]
+		# if no kill possible AND no spot is safe, just go for biggest dangerous box 
+		print('All spots are dangerous: going for {} since it is biggest'.format(dangerous[0]))
+		return dangerous[0]
 
 	# TODO: implement conservative mode (just reorder aggressive)
 	if mode == 'conservative':
-		pass
-
-	# if all blocks are dangerous and no potential kills, just return best escapable spot and hope for the best 
-	if len(box_sizes) != 0:
-		return box_sizes[0][0]
-
+		# safe: just avoid any collisions and go for biggest safe box
+		for spot in can_kill:
+			if spot in safe:
+				print('going for {}: safe and can kill an enemy'.format(spot))
+				return spot
+		# if no criteria matches this, go for first safe spot: 
+		if len(safe) != 0:
+			print('going for {}: safe'.format(safe[0]))
+			return safe[0]
+		# if no kill possible AND no spot is safe, just go for biggest dangerous box 
+		print('All spots are dangerous: going for {} since it is biggest'.format(dangerous[0]))
+		return dangerous[0]
 
 
 	# -1 is just signaling no more cases are actually handled in this function so ignore it

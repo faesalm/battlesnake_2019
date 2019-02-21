@@ -661,7 +661,7 @@ def escape(box_size, game_board):
 	if len(body) < box_size:
 		if log:
 			#print 'matching snake and box size' 
-		box_size = len(body)
+			box_size = len(body)
 	# mark last box_size (n) of body (in reverse order because closer to tail is better)
 	c_list = body[-box_size::]
 	c_list = c_list[::-1]

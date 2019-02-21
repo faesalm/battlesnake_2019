@@ -660,7 +660,7 @@ def escape(box_size, game_board):
 	# if body is smaller than box size change boxsize to body 
 	if len(body) < box_size:
 		if log:
-			print 'matching snake and box size' 
+			#print 'matching snake and box size' 
 		box_size = len(body)
 	# mark last box_size (n) of body (in reverse order because closer to tail is better)
 	c_list = body[-box_size::]
@@ -678,7 +678,7 @@ def escape(box_size, game_board):
 			escape_loc = c
 			new_board[escape_loc['y']][escape_loc['x']] = '*'
 			break
-	print(new_board)
+	# print(new_board)
 	# bfs to escape_loc from squares adj to head or find valid locations to move
 	escape_routes = []
 	valid = []
@@ -695,8 +695,8 @@ def escape(box_size, game_board):
 		# if invalid direction (snake body)
 		# might need to check for more than just 'X' spots in the future(maybe T for other snakes)
 		if game_board[coord[1]][coord[0]] == 'X':
-			print('removing because equals x')
-			print(coord)
+			#print('removing because equals x')
+			#print(coord)
 			continue
 		# test bfs path if there is an escape location
 		if escape_loc != -1:
@@ -710,8 +710,8 @@ def escape(box_size, game_board):
 				escape_routes.append((len(route), coord))
 		else: 
 			# valid routes are backup in case of no escape route
-			print('adding to valid: ')
-			print(coord)
+			#print('adding to valid: ')
+			#print(coord)
 			valid.append(coord)
 	# check for an escape route
 	if len(escape_routes) != 0:
@@ -727,7 +727,7 @@ def escape(box_size, game_board):
 			print('no valid spot')
 			return 'down'
 		else:
-			print("valid: ")
+			#print("valid: ")
 			print(valid)
 			return return_move(head, valid[0])
 

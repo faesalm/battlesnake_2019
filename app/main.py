@@ -391,6 +391,21 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 	dangerous = []
 
 	print ('ANALYZING SPOTS:')
+	# TODO: if there are no escapable boxes
+	"""	
+	if safe_spots == []:
+			# if they are smaller: go for the bigger box in nearby_spots
+			for box in box_sizes:
+				if box in e['nearby_spots']:
+					return box[0]
+			# TODO: decide which is better spot if more than one
+			for spot in safe_spots:
+				# if enemy is smaller and box is escapable, attack
+				if not e['bigger'] and spot in e['nearby_spots']:
+					return spot
+	return -1
+	"""
+
 	for spot in box_sizes:
 			if spot[0] in safe_spots:
 				print('Spot {} is possibly safe with size of {} '.format(spot[0],spot[1]))
@@ -411,6 +426,7 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 	print(safe)
 	print(dangerous)
 
+	# aggressive: go for first possible kill that is safe, 
 	if mode == 'aggressive':
 		goal = -1 
 		# aggressive: go for first possible kill that is safe, 
@@ -426,46 +442,17 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 		print('All spots are dangerous: going for {} since it is biggest'.format(dangerous[0]))
 		return dangerous[0]
 
-	# TODO: implement conservative mode (just reorder aggressive)
+	# try going for safe spots
 	if mode == 'conservative':
 		# safe: just avoid any collisions and go for biggest safe box
-		for spot in can_kill:
-			if spot in safe:
-				print('going for {}: safe and can kill an enemy'.format(spot))
-				return spot
-		# if no criteria matches this, go for first safe spot: 
 		if len(safe) != 0:
 			print('going for {}: safe'.format(safe[0]))
 			return safe[0]
 		# if no kill possible AND no spot is safe, just go for biggest dangerous box 
 		print('All spots are dangerous: going for {} since it is biggest'.format(dangerous[0]))
 		return dangerous[0]
-
-
-	# -1 is just signaling no more cases are actually handled in this function so ignore it
-	return -1
-
-	"""	
-		# if no escapable spots.
-			if safe_spots == []:
-				# if they are smaller: go for the bigger box in nearby_spots
-				for box in box_sizes:
-					if box in e['nearby_spots']:
-						return box[0]
-			# TODO: decide which is better spot if more than one
-			for spot in safe_spots:
-				# if enemy is smaller and box is escapable, attack
-				if not e['bigger'] and spot in e['nearby_spots']:
-					return spot
-	return -1
-
-	"""
-	#if we have 2+ moves and they do too
-		# find biggest box of our possible moves and eliminate bad boxes
-			# if they are a smaller snake and the possible collision is in a good box. try it
-			# if we can completely avoid collisions( safe moves )
-			# take it always if they are bigger 
-			# if they are bigger and there are no safe moves go for biggest box
+	# this just signals function to be ignored because we didnt handle a case (should never get here)
+	return -1 
 	
 # function to gather basic information on all enemies. Decision making is done in other functions
 # Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False}

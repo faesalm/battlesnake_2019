@@ -39,7 +39,7 @@ def move():
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	board = board_output(data)
 	ghost_board = ghost_tail(board)
-	num_board = two_pass(ghost_board, data)
+	num_board = two_pass(board, data)
 	if log:
 		print('Board:')
 		print(board)

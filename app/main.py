@@ -289,18 +289,27 @@ def handle_adj_enemies(board):
 # returns (x,y) move
 """
 	Engine for handling nearby enemies
-	LOGIC:
+	Logic:
+	0. if we can go only 1 place, return that.
 	1. if any enemy has one spot to go and we can reach that spot:
 		- kill enemy if we are larger
 		- avoid that spot as they will go there and kill us 
-	2. if we have more than 1 choice and enemy has more than 1 choice:
-		if there are escapable boxes: 
-			if any bigger enemy can go here:
+	2. if we have more than 1 choice and enemy has 1+ choice:
+		if there are escapable spots and if spot is safe (risky but not guaranteed to die):
+			case 1 (aggressive): if any smaller enemy can go here: 
+				attack (no risk of getting stuck since it is escapable)
+			
+			case 2 (conservative): no enemy can go here: 
+				take this direction
+			
+			default case (if other 2 return empty): if any bigger enemy can go here:
 				try to avoid, but still go for it if only escapable spot
-			TODO:
-			if any smaller enemy can go here: 
-				attack (no risk since it is escapable)
-
+			
+			cases are executed in that order (possibly change mode depending on gameplay)
+		
+		#TODO: consider if spot is both dangerous and can kill snake 
+		#TODO: consider how many moves enemy has
+		#TODO: consider how many enemies can attack a spot
 
 		if no escapable boxes: 
 
@@ -308,7 +317,7 @@ def handle_adj_enemies(board):
 
 
 """
-def check_collisions(enemy_data, board):
+def check_collisions(enemy_data, board, mode = 'aggressive'):
 	# only consider nearby enemies
 	enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	# directions are our valid moves
@@ -348,16 +357,18 @@ def check_collisions(enemy_data, board):
 			if len(e['possible_moves']) == 1 and e['possible_moves'][0] in e['nearby_spots']:
 				if not e['bigger']:
 					if log:
-						print('We can kill {}. Going to {}'.format(e['name'], e['possible_moves'][0]))
+						print('We can 100% kill {}. Going to {}'.format(e['name'], e['possible_moves'][0]))
 					return e['possible_moves'][0]
 				# they are bigger than us and they WILL move to this spot, so avoid no matter what
 				else: 
 					bad = e['possible_moves'][0]
 					if log:
-						print('{} can kill us if we go to {}, so avoid it'.format(e['name'], e['possible_moves'][0]))
+						print('{} can 100% kill us if we go to {}, so avoid it'.format(e['name'], e['possible_moves'][0]))
 					valid.remove(bad)
 
-	# we have 2 choices that can potentially cause collision, and they have 2 choices
+
+	# we have 2+ choices and at most 2 that can potentially cause collision
+	# spots that are valid and will not kill us 
 	safe_spots = valid
 	# remove spots that lead to boxes that are not escapable
 	box_sizes = []
@@ -370,35 +381,81 @@ def check_collisions(enemy_data, board):
 		if not escapable:
 			safe_spots.remove(spot)
 	# sort for biggest 
+	# (x,y), box_size pair for every escapable spot. Sorted from largest to smallest box_size 
 	box_sizes.sort(key=lambda x: x[1], reverse = True)
 	print(box_sizes)
 
 	# target spot 
 	goal = -1
-	# flag if ideal spot is dangerous
-	danger = False
-	# flag to check if can kill
-	can_kill = True
-	# pick biggest safe spot
-	for spot in box_sizes:
-		if spot[0] in safe_spots:
-			print('Spot {} is escapable with size of {} '.format(spot[0],spot[1]))
-			# if a spot is dangerous, skip it, but pick it anyway if all others are not escapable (risk it)
-			for e in enemies:
-				if spot[0] in e['nearby_spots'] and e['bigger']:
-						print('Spot {} is dangerous!'.format(spot[0]))
-						danger = True
-			goal = spot[0]
-			if not danger:
-				break
-			# TODO: consider if we can kill snake
-		else:
-			print('Spot {} is NOT escapable '.format(spot[0]))
+	"""
+		if there are escapable spots and if spot is safe (risky but not guaranteed to die):
+			case 1 (aggressive): if any smaller enemy can go here: 
+				attack (no risk of getting stuck since it is escapable)
+			
+			case 2 (conservative): no enemy can go here: 
+				take this direction
 
-	if goal != -1:
-		print('going for {}'.format(goal))
-		return goal 
+			default case (if other 2 return empty): if any bigger enemy can go here:
+				try to avoid, but still go for it if only escapable spot
+			
+			cases are executed in that order (possibly change mode depending on gameplay)
 
+	"""
+
+	# aggressive: try to kill enemies first
+	if mode == 'aggressive':
+		for spot in box_sizes:
+			if spot[0] in safe_spots:
+				can_kill = False
+				print('Spot {} is possibly safe with size of {} '.format(spot[0],spot[1]))
+				# pick an escapable potential kill
+				for e in enemies:
+					if spot[0] in e['nearby_spots'] and not e['bigger']:
+							print('Spot {} can kill {}'.format(spot[0],e['name']))
+							can_kill = True
+							goal = spot[0]
+				# if found a spot that can kill, return since this is biggest box
+				if can_kill:
+					break
+				# TODO: consider if we can kill snake
+			else:
+				print('Spot {} is NOT safe '.format(spot[0]))
+		# if target is found 
+		if goal != -1:
+			print('going for {}: safe and can kill an enemy'.format(goal))
+			return goal 
+
+
+		found_safe = False
+		# if not try to find an escapable and not dangerous spot
+		for spot in box_sizes:
+			if spot[0] in safe_spots:
+				danger = False
+				print('Spot {} is possibly safe with size of {} '.format(spot[0],spot[1]))
+				# pick an escapable and not dangerous path
+				for e in enemies:
+					if spot[0] in e['nearby_spots'] and e['bigger']:
+							print('Spot {} is dangerous because of {}'.format(spot[0],e['name']))
+							danger = True
+							goal = spot[0]
+				# if found a spot that can kill, return since this is biggest box
+				if not danger:
+					found_safe = True
+					break
+			else:
+				print('Spot {} is NOT safe '.format(spot[0]))
+		# if safe spot found
+		if found_safe:
+			print('going for {}: safe and no one can kill us'.format(goal))
+			return goal
+
+	# TODO: implement conservative mode (just reorder aggressive)
+	if mode == 'conservative':
+		pass
+
+	# if all blocks are dangerous and no potential kills, just return best escapable spot and hope for the best 
+	if len(box_sizes) != 0:
+		return box_sizes[0][0]
 
 
 

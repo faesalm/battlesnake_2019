@@ -440,6 +440,7 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 							goal = spot[0]
 				# if found a spot that can kill, return since this is biggest box
 				if not danger:
+					goal = spot[0]
 					found_safe = True
 					break
 			else:

@@ -9,7 +9,7 @@ import collections
 
 # health and length threshold to start getting food
 min_health = 30
-min_length = 10
+min_length = 15
 global data
 global escapable 
 log = True 
@@ -53,14 +53,15 @@ def move():
 		for e in enemy_data:
 			print(e)
 
-	# if enemy nearby, assess
+	# if any enemy nearby, assess danger and make move accordingly
 	nearby_enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	if len(nearby_enemies) != 0:
 		print("THERE IS ENEMY NEARBY")
 		direction = check_collisions(enemy_data,num_board)
-		print ("going to " + str(direction))
-		direction = return_move(head,direction)
-		return MoveResponse(direction)
+		if direction != -1:
+			print ("going to " + str(direction))
+			direction = return_move(head,direction)
+			return MoveResponse(direction)
 
 	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
 	#direction = handle_adj_enemies(board)
@@ -83,8 +84,8 @@ def move():
 			return MoveResponse(direction)
 		else:
 			break
-
-	foods = find_closest_food(data, num_board, ghost_board)
+	# TODO: Change to ghost foods with ghost tail works well
+	foods = find_closest_food(data, num_board, board)
 	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
 	print(foods)
 	# if there is no food reachable
@@ -128,7 +129,7 @@ def move():
 		closest_food = foods[0]
 		print('closest food is')
 		print(closest_food)
-		path = bfs(ghost_board, head, closest_food)
+		path = bfs(board, head, closest_food)
 		print(path)
 		direction = return_move(head, path[1])
 	f_time = time.time() - s_time
@@ -286,6 +287,27 @@ def handle_adj_enemies(board):
 	return -1 
 
 # returns (x,y) move
+"""
+	Engine for handling nearby enemies
+	LOGIC:
+	1. if any enemy has one spot to go and we can reach that spot:
+		- kill enemy if we are larger
+		- avoid that spot as they will go there and kill us 
+	2. if we have more than 1 choice and enemy has more than 1 choice:
+		if there are escapable boxes: 
+			if any bigger enemy can go here:
+				try to avoid, but still go for it if only escapable spot
+			TODO:
+			if any smaller enemy can go here: 
+				attack (no risk since it is escapable)
+
+
+		if no escapable boxes: 
+
+
+
+
+"""
 def check_collisions(enemy_data, board):
 	# only consider nearby enemies
 	enemies = [e for e in enemy_data if e['nearby_spots'] != []]
@@ -304,47 +326,87 @@ def check_collisions(enemy_data, board):
 		if val not in ('X', 'T', 'H'):
 			valid.append(d)
 
-	# literally dead next turn
+	# Base cases if one have only no/one possible move to make
+	# no valid moves so we are dead next turn. Return 'down' 
 	if len(valid) == 0:
 		return get_down(head)
-
 	#if we have one move take that move
 	if len(valid) == 1:
 		return valid[0]
 
-	# if we have 2+ moves and enemy has one
-	# are they smaller? kill them
-	# are they bigger
-		# never move to their one move
-		# test other moves with box info
-	elif len(valid) > 1:
-		# we nave 2 choices that can potentially cause collision, and they have 1 choice
+	"""
+	if we have 2+ possible moves and enemy has one possible move
+		if they are smaller kill them (will always work since they have one possible move)
+		# are they bigger?
+			# never move to their one move 
+			# test other moves with box info
+	"""
+	if len(valid) > 1:
+		# we have 2+ choices and they have 1 choice. Decide if to avoid or intercept their move based on size
 		for e in enemies:
 			# check if enemy has one possible move and we can reach it
 			if len(e['possible_moves']) == 1 and e['possible_moves'][0] in e['nearby_spots']:
 				if not e['bigger']:
+					if log:
+						print('We can kill {}. Going to {}'.format(e['name'], e['possible_moves'][0]))
 					return e['possible_moves'][0]
 				# they are bigger than us and they WILL move to this spot, so avoid no matter what
 				else: 
 					bad = e['possible_moves'][0]
+					if log:
+						print('{} can kill us if we go to {}, so avoid it'.format(e['name'], e['possible_moves'][0]))
 					valid.remove(bad)
 
-	"""
-				# we have 2 choices that can potentially cause collision, and they have 2 choices
-			safe_spots = valid
-			# remove spots that lead to boxes that are not escapable
-			box_sizes = ()
-			for spot in valid:
-				spot_num = board[spot[1]][spot[0]]
-				box_size = box_info(board)[spot_num]
-				tup = (spot,box_size)
-				box_sizes.append(tup)
-				direction = escape(box_size,board)
-				if not escapable:
-					safe_spots.remove(spot)
-			box_sizes = sorted(box_sizes)[::-1]
+	# we have 2 choices that can potentially cause collision, and they have 2 choices
+	safe_spots = valid
+	# remove spots that lead to boxes that are not escapable
+	box_sizes = []
+	for spot in valid:
+		spot_num = board[spot[1]][spot[0]]
+		box_size = box_info(board)[spot_num]
+		tup = [spot,box_size]
+		box_sizes.append(tup)
+		direction = escape(box_size,board)
+		if not escapable:
+			safe_spots.remove(spot)
+	# sort for biggest 
+	box_sizes.sort(key=lambda x: x[1], reverse = True)
+	print(box_sizes)
 
-			# if no escapable spots.
+	# target spot 
+	goal = -1
+	# flag if ideal spot is dangerous
+	danger = False
+	# flag to check if can kill
+	can_kill = True
+	# pick biggest safe spot
+	for spot in box_sizes:
+		if spot[0] in safe_spots:
+			print('Spot {} is escapable with size of {} '.format(spot[0],spot[1]))
+			# if a spot is dangerous, skip it, but pick it anyway if all others are not escapable (risk it)
+			for e in enemies:
+				if spot[0] in e['nearby_spots'] and e['bigger']:
+						print('Spot {} is dangerous!'.format(spot[0]))
+						danger = True
+			goal = spot[0]
+			if not danger:
+				break
+			# TODO: consider if we can kill snake
+		else:
+			print('Spot {} is NOT escapable '.format(spot[0]))
+
+	if goal != -1:
+		print('going for {}'.format(goal))
+		return goal 
+
+
+
+
+	# -1 is just signaling no more cases are actually handled in this function so ignore it
+	return -1
+
+	"""	
+		# if no escapable spots.
 			if safe_spots == []:
 				# if they are smaller: go for the bigger box in nearby_spots
 				for box in box_sizes:
@@ -355,20 +417,16 @@ def check_collisions(enemy_data, board):
 				# if enemy is smaller and box is escapable, attack
 				if not e['bigger'] and spot in e['nearby_spots']:
 					return spot
+	return -1
 
-
-
-	
-	return valid[0]
+	"""
 	#if we have 2+ moves and they do too
 		# find biggest box of our possible moves and eliminate bad boxes
 			# if they are a smaller snake and the possible collision is in a good box. try it
 			# if we can completely avoid collisions( safe moves )
 			# take it always if they are bigger 
 			# if they are bigger and there are no safe moves go for biggest box
-	"""
-	return valid[0]
-
+	
 # function to gather basic information on all enemies. Decision making is done in other functions
 # Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False}
 def enemy_info(board):

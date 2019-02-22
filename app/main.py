@@ -262,7 +262,7 @@ def handle_adj_enemies(board):
 		for d in directions:
 			val = board[d[1]][d[0]]
 			# if direction is valid and not body part (assuming they are smart enough not to go there)
-			if val not in ('X', 'H'):
+			if val not in ('X', 'H', 'T'):
 				# check if food is reachable next move
 				val_tup = {'x': d[0], 'y': d[1]}
 				path = bfs(board, head, val_tup)

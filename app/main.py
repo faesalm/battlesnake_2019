@@ -106,7 +106,7 @@ def move():
 					board[d[1]][d[0]] = 'X'"""
 	
 	# chase tail if no food on board 
-	while health > min_health and length > min_length or data['food'] == []:
+	while health > min_health and length > min_length or data['board']['food'] == []:
 		if log:
 			print('chasing tail due to length')
 		direction = chase_tail(data,board)

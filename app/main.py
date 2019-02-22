@@ -8,10 +8,13 @@ import collections
 
 
 # health and length threshold to start getting food
-min_health = 30
-min_length = 15
+global min_health
+global min_length
 global data
 global escapable 
+global small
+global medium
+global large
 log = True 
 @bottle.route('/')
 def static():
@@ -27,6 +30,11 @@ def start():
 
 @bottle.post('/move')
 def move():
+	global min_health
+	global min_length
+	global small
+	global medium
+	global large
 	s_time =time.time()
 	global data
 	data = bottle.request.json
@@ -38,6 +46,13 @@ def move():
 	health = data['you']['health']
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	board = board_output(data)
+	
+	size = data['board']['width']  
+	small = True if size == 7 else False
+	medium = True if size == 11 else False
+	large = True if size == 19 else False
+
+	
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(board, data)
 	if log:
@@ -47,12 +62,27 @@ def move():
 		print(ghost_board)
 	
 	# gather information on enemies
-	enemy_data = enemy_info(board)
+	enemy_data = enemy_info(board) 
+	num_enemies = len(enemy_data)
 	if log:
 		print("ENEMY ASSESSSMENT")
 		for e in enemy_data:
 			print(e)
-
+	
+	# default values 
+	min_health = 30
+	min_length = 10
+	
+	# set strategy based on number of enemies and board size
+	if small and num_enemies >= 4:
+		min_health = 20
+		min_length = 2
+	
+		
+		
+		
+		
+		
 	# if any enemy nearby, assess danger and make move accordingly
 	nearby_enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	if len(nearby_enemies) != 0:

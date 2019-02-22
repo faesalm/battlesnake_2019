@@ -77,9 +77,7 @@ def move():
 	if small and num_enemies >= 4:
 		min_health = 20
 		min_length = 2
-	
-		
-		
+			
 		
 		
 		
@@ -106,7 +104,9 @@ def move():
 				for d in direction:
 					ghost_board[d[1]][d[0]] = 'X'
 					board[d[1]][d[0]] = 'X'"""
-	while health > min_health and length > min_length:
+	
+	# chase tail if no food on board 
+	while health > min_health and length > min_length or data['food'] == []:
 		if log:
 			print('chasing tail due to length')
 		direction = chase_tail(data,board)

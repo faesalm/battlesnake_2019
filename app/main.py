@@ -452,6 +452,8 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 							dangerous.append(spot[0])
 			else:
 				print('Spot {} is NOT safe '.format(spot[0]))
+	# filter safe places 
+	safe = safe - dangerous
 	print(can_kill)
 	print(safe)
 	print(dangerous)

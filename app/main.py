@@ -457,7 +457,7 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 	print(can_kill)
 	print(safe)
 	print(dangerous)
-
+	
 	# aggressive: go for first possible kill that is safe, 
 	if mode == 'aggressive':
 		goal = -1 
@@ -487,7 +487,7 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 	return -1 
 	
 # function to gather basic information on all enemies. Decision making is done in other functions
-# Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False}
+# Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False, 'health' = 95, }
 def enemy_info(board):
 	global data
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
@@ -499,6 +499,8 @@ def enemy_info(board):
 	for enemy in enemies:
 		enemy_dict = {}
 		enemy_head = (enemy['body'][0]['x'],enemy['body'][0]['y'])
+		enemy_tail = (enemy['body'][-1]['x'],enemy['body'][-1]['y'])
+
 		left = get_left(enemy_head)
 		right = get_right(enemy_head)
 		up = get_up(enemy_head)
@@ -508,6 +510,12 @@ def enemy_info(board):
 		# remove invalid moves
 		directions = [d for d in directions if d != -1]
 		enemy_dict['name'] = enemy['name'].encode("utf-8")
+		# health
+		enemy_dict['health'] = enemy['health']
+		
+		enemy_dict['head'] = head
+		enemy_dict['tail'] = enemy_tail
+
 		enemy_dict['possible_moves'] = []
 		# bad_directions = []
 		enemy_dict['nearby_spots'] = []
@@ -520,6 +528,7 @@ def enemy_info(board):
 		for d in directions:
 			val = board[d[1]][d[0]]
 			# if direction is valid and not body part (assuming they are smart enough not to go there)
+			# change this with tail logic 
 			if val not in ('X', 'H', 'T'):
 				enemy_dict['possible_moves'].append(d)
 				# check if food is reachable next move

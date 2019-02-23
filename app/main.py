@@ -232,7 +232,7 @@ def set_strategy(num_enemies):
 	large = True if size == 19 else False
 
 	# we can think about this later
-	aggressive = True
+	aggressive = False
 
 	# Dealing with congestion
 	# if small board and 3 enemies

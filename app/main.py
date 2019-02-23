@@ -15,6 +15,7 @@ global escapable
 global small
 global medium
 global large
+global aggressive
 log = True 
 @bottle.route('/')
 def static():
@@ -37,6 +38,7 @@ def move():
 	global large
 	s_time =time.time()
 	global data
+	global aggresive
 	data = bottle.request.json
 	name = data['you']['name']
 	turn = data['turn']
@@ -46,12 +48,6 @@ def move():
 	health = data['you']['health']
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	board = board_output(data)
-	
-	size = data['board']['width']  
-	small = True if size == 7 else False
-	medium = True if size == 11 else False
-	large = True if size == 19 else False
-
 	
 	ghost_board = ghost_tail(board)
 	num_board = two_pass(board, data)
@@ -68,43 +64,22 @@ def move():
 		print("ENEMY ASSESSSMENT")
 		for e in enemy_data:
 			print(e)
+
+	# change strategy (chase_tail, be aggresive, etc) based on board size and congestion
+	set_strategy(num_enemies)
+
 	
-	# default values 
-	min_health = 30
-	min_length = 10
-	
-	# set strategy based on number of enemies and board size
-	if small and num_enemies >= 4:
-		min_health = 20
-		min_length = 2
-			
-		
-		
-		
+
 	# if any enemy nearby, assess danger and make move accordingly
 	nearby_enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	if len(nearby_enemies) != 0:
 		print("THERE IS ENEMY NEARBY")
-		direction = check_collisions(enemy_data,num_board)
+		direction = check_adjacent(enemy_data,num_board, aggressive = aggressive)
 		if direction != -1:
 			print ("going to " + str(direction))
 			direction = return_move(head,direction)
 			return MoveResponse(direction)
 
-	# before anything, see if you can kill an adjacent snake (or seriously avoid a spot if they can kill us)
-	#direction = handle_adj_enemies(board)
-	# -1 means we are not a step away from any snake, so this logic is skipped
-	"""	if direction != -1:
-			# we cab potentially kill a snake 
-			if direction in ['up','down','left','right']:
-				return MoveResponse(direction)
-			# we can potentially die
-			else: 
-				# modify boards so other functions do not try to go for bad spot
-				for d in direction:
-					ghost_board[d[1]][d[0]] = 'X'
-					board[d[1]][d[0]] = 'X'"""
-	
 	# chase tail if no food on board 
 	while health > min_health and length > min_length or data['board']['food'] == []:
 		if log:
@@ -114,21 +89,13 @@ def move():
 			return MoveResponse(direction)
 		else:
 			break
+
 	# TODO: Change to ghost foods with ghost tail works well
 	foods = find_closest_food(data, num_board, board)
 	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
 	print(foods)
 	# if there is no food reachable
 	if len(foods) == 0:
-		'''
-		# try to chase tail
-		print ('chasing tail')
-		direction = chase_tail(data)
-		if direction != -1:
-			return MoveResponse(direction)
-		print ('cant chase tail')
-		# Do escape box logic if cant chase tail
-		'''
 		possible_boxes = snake_info(num_board)
 		# if there are two boxes to pick from, move to bigger one
 		if (len(possible_boxes) > 1):
@@ -250,6 +217,36 @@ def chase_tail(data,board):
 		direction = return_move(head, path[1])
 		return direction
 
+def set_strategy(num_enemies):
+	global min_length
+	global min_health
+	global aggressive
+	global data
+	# defaults
+	min_health = 30
+	min_length = 10
+
+	size = data['board']['width']
+	small = True if size == 7 else False
+	medium = True if size == 11 else False
+	large = True if size == 19 else False
+
+	# we can think about this later
+	aggressive = True
+
+	# Dealing with congestion
+	# if small board and 3 enemies
+	if small and num_enemies >= 3 :
+		print("board is small and congested")
+		min_health = 20
+		# do not go lower!
+		min_length = 2
+	# if medium board and 3 enemies
+	if small and num_enemies >= 5 :
+		print("board is medium and congested")
+		min_health = 30
+		# do not go lower!
+		min_length = 2
 
 #takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):
@@ -266,56 +263,6 @@ def box_info(num_board):
 			else:
 				info[key] = 1
 	return info
-
-
-# function to calculate potential moves of enemies and either attacks that position or marks it with an 'X' as it is dangerous. 
-# skipped if no enemies nearby. Returns list of bad positions. -1 if function is irrelavent
-# TODO: Fix this to handle multiple enemies and make smarter decisions based on enemy_info()
-def handle_adj_enemies(board):
-	global data
-	name = data['you']['name']
-	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
-	snakes = data['board']['snakes']
-	# change name to official name 
-	enemies = [s for s in snakes if s['name'] != name]
-	for enemy in enemies:
-		enemy_head = (enemy['body'][0]['x'],enemy['body'][0]['y'])
-		left = get_left(enemy_head)
-		right = get_right(enemy_head)
-		up = get_up(enemy_head)
-		down = get_down(enemy_head)
-		# check what is around 
-		directions = [up,down,left,right] 
-		# remove invalid moves
-		directions = [d for d in directions if d != -1]
-		bad_directions = []
-		for d in directions:
-			val = board[d[1]][d[0]]
-			# if direction is valid and not body part (assuming they are smart enough not to go there)
-			if val not in ('X', 'H', 'T'):
-				# check if food is reachable next move
-				val_tup = {'x': d[0], 'y': d[1]}
-				path = bfs(board, head, val_tup)
-				dist = len(path)
-				if  dist == 2:
-					# this is a potential enemy move. check if we can move there
-					enemy_length = len(enemy['body'])
-					my_length = len(data['you']['body'])
-					# if they are smaller, go for this spot
-					if enemy_length < my_length:
-						if log:
-							print ("enemy is close and smaller. Trying to kill it by going to: " + str(path[1]))
-						direction = return_move(head, path[1])
-						return direction
-					else: 
-						if log:
-							print ("enemy is bigger. DO NOT GO HERE: " + str(path[1]))
-						bad_directions.append(d)
-	# either return list of bad directions or return -1 if we are not close to other snakes (making this function useless)
-	if len(bad_directions) > 0:
-		return bad_directions
-	return -1 
-
 
 """
 	Engine for handling nearby enemies
@@ -345,10 +292,9 @@ def handle_adj_enemies(board):
 		TODO
 
 	# returns (x,y) move
-
 """
 
-def check_collisions(enemy_data, board, mode = 'aggressive'):
+def check_adjacent(enemy_data, board, aggressive = True):
 	# only consider nearby enemies
 	enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	# directions are our valid moves
@@ -460,7 +406,7 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 	print(dangerous)
 	
 	# aggressive: go for first possible kill that is safe, 
-	if mode == 'aggressive':
+	if aggressive:
 		goal = -1 
 		# aggressive: go for first possible kill that is safe, 
 		for spot in can_kill:
@@ -476,7 +422,7 @@ def check_collisions(enemy_data, board, mode = 'aggressive'):
 		return dangerous[0]
 
 	# try going for safe spots
-	if mode == 'conservative':
+	if not aggressive:
 		# safe: just avoid any collisions and go for biggest safe box
 		if len(safe) != 0:
 			print('going for {}: safe'.format(safe[0]))
@@ -789,6 +735,7 @@ def ghost_tail(board, debug = False):
 			new_board[dest['y']][dest['x']] = '-'
 		loc +=1
 	return new_board
+
 
 # Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds
 def get_right(point):

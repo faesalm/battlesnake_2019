@@ -316,7 +316,7 @@ def handle_adj_enemies(board):
 		return bad_directions
 	return -1 
 
-# returns (x,y) move
+
 """
 	Engine for handling nearby enemies
 	Logic:
@@ -342,11 +342,12 @@ def handle_adj_enemies(board):
 		#TODO: consider how many enemies can attack a spot
 
 		if no escapable boxes: 
+		TODO
 
-
-
+	# returns (x,y) move
 
 """
+
 def check_collisions(enemy_data, board, mode = 'aggressive'):
 	# only consider nearby enemies
 	enemies = [e for e in enemy_data if e['nearby_spots'] != []]
@@ -515,7 +516,7 @@ def enemy_info(board):
 		
 		enemy_dict['head'] = head
 		enemy_dict['tail'] = enemy_tail
-
+		enemy_dict['just_ate'] = True if enemy['health'] == 100 else False
 		enemy_dict['possible_moves'] = []
 		# bad_directions = []
 		enemy_dict['nearby_spots'] = []
@@ -549,17 +550,15 @@ def board_output(data):
 	game_board[:] = '-'
 	snake_data = data['board']['snakes']
 	#print(snake_data)
-	snakes = []
 	food_data =  data['board']['food']
 	#declare game_board as global in method so it can be updated
 	for food in food_data:
 		x = food['x']
 		y = food['y']
 		game_board[y][x] = 'F'
-	for data in snake_data:
-		snakes.append(data.get('body'))	  
 	i = 1
-	for snake in snakes:
+	for snake_data in snake_data:
+		snake = snake_data['body']
 		j = 0
 		for segment in snake:
 			x = segment.get('x')
@@ -567,8 +566,8 @@ def board_output(data):
 			#Set head
 			if j == 0:
 				game_board[y][x] = 'H'
-			#Set tail
-			elif j == len(snake)-1:
+			#Set tail if we just ate
+			elif j == len(snake)-1 and snake_data['health'] == 100: 
 				game_board[y][x] = 'T'
 			else:
 				game_board[y][x] = 'X'

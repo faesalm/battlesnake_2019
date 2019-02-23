@@ -242,7 +242,7 @@ def set_strategy(num_enemies):
 		# do not go lower!
 		min_length = 2
 	# if medium board and 3 enemies
-	if small and num_enemies >= 5 :
+	if medium and num_enemies >= 5 :
 		print("board is medium and congested")
 		min_health = 30
 		# do not go lower!

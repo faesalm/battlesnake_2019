@@ -567,8 +567,9 @@ def board_output(data):
 			if j == 0:
 				game_board[y][x] = 'H'
 			#Set tail if we just ate
-			elif j == len(snake)-1 and snake_data['health'] == 100: 
-				game_board[y][x] = 'T'
+			elif j == len(snake)-1:
+				if snake_data['health'] == 100: 
+					game_board[y][x] = 'T'
 			else:
 				game_board[y][x] = 'X'
 			j = j+1

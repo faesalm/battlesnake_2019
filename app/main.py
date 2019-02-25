@@ -242,11 +242,14 @@ def set_strategy(num_enemies):
 		# do not go lower!
 		min_length = 2
 	# if medium board and 5 enemies
-	if medium and num_enemies >= 3 :
+	if medium and num_enemies >= 5 :
 		print("board is medium and congested")
 		min_health = 30
 		# do not go lower!
-		min_length = 4
+		min_length = 3
+	if large:
+		min_health = 30
+		min_length = 15
 
 #takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):

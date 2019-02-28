@@ -6,17 +6,6 @@ from api import *
 import time
 import collections
 
-
-# health and length threshold to start getting food
-global min_health
-global min_length
-global data
-global escapable
-global small
-global medium
-global large
-global aggressive
-log = True
 @bottle.route('/')
 def static():
 	return "the server is running"
@@ -31,84 +20,80 @@ def start():
 
 @bottle.post('/move')
 def move():
-	global min_health
-	global min_length
-	global small
-	global medium
-	global large
 	s_time =time.time()
-	global data
-	global aggresive
 	data = bottle.request.json
-	name = data['you']['name']
+	name = data['you']['id']
 	turn = data['turn']
-	if log:
-		print("Move for turn: " +str(turn))
+	print("Move for turn: " +str(turn))
 	length = len(data['you']['body'])
 	health = data['you']['health']
 	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
 	board = board_output(data)
-
-	ghost_board = ghost_tail(board)
+	ghost_board = ghost_tail(board,data)
 	num_board = two_pass(board, data)
-	if log:
-		print('Board:')
-		print(board)
-		print('GhostBoard:')
-		print(ghost_board)
+	print('Board:')
+	print(board)
+	print('GhostBoard:')
+	print(ghost_board)
 
 	# gather information on enemies
-	enemy_data = enemy_info(board)
+	enemy_data = enemy_info(board,data)
 	num_enemies = len(enemy_data)
-	if log:
-		print("ENEMY ASSESSSMENT")
-		for e in enemy_data:
-			print(e)
+	print("ENEMY ASSESSSMENT")
+	for e in enemy_data:
+		print(e)
 
 	# change strategy (chase_tail, be aggresive, etc) based on board size and congestion
-	set_strategy(num_enemies)
-
-
+	params = set_strategy(data,num_enemies)
+	min_health = params[0]
+	min_length = params[1]
 
 	# if any enemy nearby, assess danger and make move accordingly
 	nearby_enemies = [e for e in enemy_data if e['nearby_spots'] != []]
 	if len(nearby_enemies) != 0:
 		print("THERE IS ENEMY NEARBY")
-		direction = check_adjacent(enemy_data,num_board, aggressive = aggressive)
+		direction = check_adjacent(enemy_data,num_board,data)
 		if direction != -1:
 			print ("going to " + str(direction))
 			direction = return_move(head,direction)
 			return MoveResponse(direction)
+	safe_food = []
+	foods = find_closest_food(data, num_board, ghost_board)
+	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
+	print('safe foods:')
+	print(safe_food)
+	print ('-' * 10)
+	if safe_food != []:
+		path = bfs(board, head, safe_food[0])
+		print(path)
+		if path != []:
+			direction = return_move(head, path[1])
+			return MoveResponse(direction)
 
 	# chase tail if no food on board
 	while health > min_health and length > min_length or data['board']['food'] == []:
-		if log:
-			print('chasing tail due to length')
-		direction = chase_tail(data,board)
+		print('chasing tail due to length')
+		direction = chase_tail(data,ghost_board)
 		if direction != -1:
 			return MoveResponse(direction)
 		else:
 			break
-
-	# TODO: Change to ghost foods with ghost tail works well
-	foods = find_closest_food(data, num_board, board)
-	foods = [food for food in foods if food['slack'] >= 0 and food['dist'] != -1]
+	print('safe foods:')
 	print(foods)
+	print ('-' * 10)
 	# if there is no food reachable
 	if len(foods) == 0:
-		possible_boxes = snake_info(num_board)
+		possible_boxes = snake_info(num_board,data)
 		# if there are two boxes to pick from, move to bigger one
 		if (len(possible_boxes) > 1):
-			if log:
-				print 'picking larger box'
+			print 'picking larger box'
 			dict = {}
 			for b in possible_boxes:
 				# get box_size
 				dict[b[0]] = box_info(num_board)[b[0]]
 			# label of biggest box
 			big_box = max(dict, key=dict.get)
-			if log:
-				print 'bigger box is '
+			print 'bigger box is '
 			print(big_box)
 			for b in possible_boxes:
 				if b[0] == big_box:
@@ -119,20 +104,23 @@ def move():
 		elif (len(possible_boxes) == 1):
 			print 'inside one box'
 			box_size = box_info(num_board)[possible_boxes[0][0]]
-			direction = escape(box_size, board)
+			direction = escape(box_size, board,data)[0]
 			return MoveResponse(direction)
 	# else foods are reachable
 	else:
 		closest_food = foods[0]
+		if safe_food != []:
+			closest_food = safe_food[0]
 		print('closest food is')
 		print(closest_food)
 		path = bfs(board, head, closest_food)
 		print(path)
 		direction = return_move(head, path[1])
+		return MoveResponse(direction)
 	f_time = time.time() - s_time
 	# if code is too slow
 	print("Execution Time: {}ms".format(round(f_time,3)*1000))
-	return MoveResponse(direction)
+	return MoveResponse('down')
 
 # run bfs to find closest food
 # return list of tuples (x,y) to food:  [(14, 6), (14, 5), (13, 5), (12, 5)]
@@ -185,10 +173,10 @@ def chase_tail(data,board):
 	# tail tuple
 	tail = (data['you']['body'][-1]['x'], data['you']['body'][-1]['y'])
 	directions = []
-	directions.append(get_left(tail))
-	directions.append(get_right(tail))
-	directions.append(get_up(tail))
-	directions.append(get_down(tail))
+	directions.append(get_left(tail,data))
+	directions.append(get_right(tail,data))
+	directions.append(get_up(tail,data))
+	directions.append(get_down(tail,data))
 	# remove invalid moves
 	directions = [d for d in directions if d != -1]
 	paths = []
@@ -217,22 +205,14 @@ def chase_tail(data,board):
 		direction = return_move(head, path[1])
 		return direction
 
-def set_strategy(num_enemies):
-	global min_length
-	global min_health
-	global aggressive
-	global data
+def set_strategy(data,num_enemies):
 	# defaults
 	min_health = 30
 	min_length = 10
-
 	size = data['board']['width']
 	small = True if size == 7 else False
 	medium = True if size == 11 else False
 	large = True if size == 19 else False
-
-	# we can think about this later
-	aggressive = True
 
 	# Dealing with congestion
 	# if small board and 3 enemies
@@ -250,6 +230,7 @@ def set_strategy(num_enemies):
 	if large:
 		min_health = 30
 		min_length = 15
+	return (min_health, min_length)
 
 #takes in a board from two_pass and returns a dict w/ unique box labels and the number of times the label occurs
 def box_info(num_board):
@@ -266,6 +247,7 @@ def box_info(num_board):
 			else:
 				info[key] = 1
 	return info
+	
 
 """
 	Engine for handling nearby enemies
@@ -276,10 +258,10 @@ def box_info(num_board):
 		- avoid that spot as they will go there and kill us
 	2. if we have more than 1 choice and enemy has 1+ choice:
 		if there are escapable spots and if spot is safe (risky but not guaranteed to die):
-			case 1 (aggressive): if any smaller enemy can go here:
+			case 1: if any smaller enemy can go here:
 				attack (no risk of getting stuck since it is escapable)
 
-			case 2 (conservative): no enemy can go here:
+			case 2: no enemy can go here:
 				take this direction
 
 			default case (if other 2 return empty): if any bigger enemy can go here:
@@ -296,29 +278,32 @@ def box_info(num_board):
 
 	# returns (x,y) move
 """
-
-def check_adjacent(enemy_data, board, aggressive = True):
-	# only consider nearby enemies
-	enemies = [e for e in enemy_data if e['nearby_spots'] != []]
-	# directions are our valid moves
-	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
+def check_point(board,point,data):
 	directions = []
 	valid = []
-	directions.append(get_left(head))
-	directions.append(get_right(head))
-	directions.append(get_up(head))
-	directions.append(get_down(head))
+	directions.append(get_left(point,data))
+	directions.append(get_right(point,data))
+	directions.append(get_up(point,data))
+	directions.append(get_down(point,data))
 	# remove invalid moves
 	directions = [d for d in directions if d != -1]
 	for d in directions:
 		val = board[d[1]][d[0]]
 		if val not in ('X', 'T', 'H'):
 			valid.append(d)
+	return valid
+	
+def check_adjacent(enemy_data, board,data ):
+	# only consider nearby enemies
+	enemies = [e for e in enemy_data if e['nearby_spots'] != []]
+	# directions are our valid moves
+	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
+	valid = check_point(board,head,data)
 
 	# Base cases if one have only no/one possible move to make
 	# no valid moves so we are dead next turn. Return 'down'
 	if len(valid) == 0:
-		return get_down(head)
+		return get_down(head,data)
 	#if we have one move take that move
 	if len(valid) == 1:
 		return valid[0]
@@ -336,14 +321,12 @@ def check_adjacent(enemy_data, board, aggressive = True):
 			# check if enemy has one possible move and we can reach it
 			if len(e['possible_moves']) == 1 and e['possible_moves'][0] in e['nearby_spots']:
 				if not e['bigger']:
-					if log:
-						print('We can 100% kill {}. Going to {}'.format(e['name'], e['possible_moves'][0]))
+					print('We can 100% kill {}. Going to {}'.format(e['name'], e['possible_moves'][0]))
 					return e['possible_moves'][0]
 				# they are bigger than us and they WILL move to this spot, so avoid no matter what
 				else:
 					bad = e['possible_moves'][0]
-					if log:
-						print('{} can 100% kill us if we go to {}, so avoid it'.format(e['name'], e['possible_moves'][0]))
+					print('{} can 100% kill us if we go to {}, so avoid it'.format(e['name'], e['possible_moves'][0]))
 					valid.remove(bad)
 
 
@@ -357,7 +340,9 @@ def check_adjacent(enemy_data, board, aggressive = True):
 		box_size = box_info(board)[spot_num]
 		tup = [spot,box_size]
 		box_sizes.append(tup)
-		direction = escape(box_size,board)
+		escape_info = escape(box_size,board,data)
+		# direction = escape_info[0]
+		escapable = escape_info[1]
 		if not escapable:
 			safe_spots.remove(spot)
 	# sort for biggest
@@ -395,7 +380,7 @@ def check_adjacent(enemy_data, board, aggressive = True):
 							print('Spot {} can kill {}'.format(spot[0],e['name']))
 							can_kill.append(spot[0])
 					if spot[0] not in e['nearby_spots'] or not e['bigger']:
-							print('Spot {} is safe'.format(spot[0],e['name']))
+							print('Spot {} is safe'.format(spot[0]))
 							safe.append(spot[0])
 					else:
 							print('Spot {} is dangerous because of {}'.format(spot[0],e['name']))
@@ -408,53 +393,40 @@ def check_adjacent(enemy_data, board, aggressive = True):
 	print(safe)
 	print(dangerous)
 
-	# aggressive: go for first possible kill that is safe,
-	if aggressive:
-		goal = -1
-		# aggressive: go for first possible kill that is safe,
-		for spot in can_kill:
-			if spot in safe:
-				print('going for {}: safe and can kill an enemy'.format(spot))
-				return spot
-		# if no criteria matches this, go for first safe spot:
-		if len(safe) != 0:
-			print('going for {}: safe'.format(safe[0]))
-			return safe[0]
-		# if no kill possible AND no spot is safe, just go for biggest dangerous box
-		print('All spots are dangerous: going for {} since it is biggest'.format(dangerous[0]))
-		return dangerous[0]
-
-	# try going for safe spots
-	if not aggressive:
-		# safe: just avoid any collisions and go for biggest safe box
-		if len(safe) != 0:
-			print('going for {}: safe'.format(safe[0]))
-			return safe[0]
-		# if no kill possible AND no spot is safe, just go for biggest dangerous box
-		print('All spots are dangerous: going for {} since it is biggest'.format(dangerous[0]))
-		return dangerous[0]
+	goal = -1
+	# go for first possible kill that is safe,
+	for spot in can_kill:
+		if spot in safe:
+			print('going for {}: safe and can kill an enemy'.format(spot))
+			return spot
+	# if no criteria matches this, go for first safe spot:
+	if len(safe) != 0:
+		print('going for {}: safe'.format(safe[0]))
+		return safe[0]
+	# if no kill possible AND no spot is safe, just go for biggest dangerous box
+	print('All spots are dangerous: going for {} since it is biggest'.format(dangerous[0]))
+	return dangerous[0]
 	# this just signals function to be ignored because we didnt handle a case (should never get here)
 	return -1
 
 # function to gather basic information on all enemies. Decision making is done in other functions
-# Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False, 'health' = 95, }
-def enemy_info(board):
-	global data
-	head = (data['you']['body'][0]['x'],data['you']['body'][0]['y'])
+# Returns a list of dicts. Format: {'possible_moves': [[8, 8], [9, 9]], 'nearby_spots': [], 'name': 'enemy', 'bigger': False, 'health' = 95, 'head' = (x,y)}
+def enemy_info(board, data):
+	head = (data['you']['body'][0]['x'], data['you']['body'][0]['y'])
 	snakes = data['board']['snakes']
-	name = data['you']['name']
+	name = data['you']['id']
 	# change name to official name
-	enemies = [s for s in snakes if s['name'] != name]
+	enemies = [s for s in snakes if s['id'] != name]
 	enemy_info = []
 	for enemy in enemies:
 		enemy_dict = {}
 		enemy_head = (enemy['body'][0]['x'],enemy['body'][0]['y'])
 		enemy_tail = (enemy['body'][-1]['x'],enemy['body'][-1]['y'])
 
-		left = get_left(enemy_head)
-		right = get_right(enemy_head)
-		up = get_up(enemy_head)
-		down = get_down(enemy_head)
+		left = get_left(enemy_head,data)
+		right = get_right(enemy_head,data)
+		up = get_up(enemy_head,data)
+		down = get_down(enemy_head,data)
 		# check what is around
 		directions = [up,down,left,right]
 		# remove invalid moves
@@ -462,8 +434,8 @@ def enemy_info(board):
 		enemy_dict['name'] = enemy['name'].encode("utf-8")
 		# health
 		enemy_dict['health'] = enemy['health']
-
-		enemy_dict['head'] = head
+		# head 
+		enemy_dict['head'] = enemy_head
 		enemy_dict['tail'] = enemy_tail
 		enemy_dict['just_ate'] = True if enemy['health'] == 100 else False
 		enemy_dict['possible_moves'] = []
@@ -608,9 +580,9 @@ application = bottle.default_app()
 # when no food reachable attempt to create a valid bfs path from head to an escape location
 # the escape loc is defined as point that will be clear reachable by bfs
 # we take the longest valid bfs path from beside our head that still reaches this escape loc
-def escape(box_size, game_board):
+def escape(box_size, game_board, data):
 	c_list = []
-	global escapable
+	escapable = False
 	escape_loc = -1
 	body = data['you']['body']
 	# check distance from head to every body part
@@ -618,9 +590,7 @@ def escape(box_size, game_board):
 	new_board = game_board.copy()
 	# if body is smaller than box size change boxsize to body
 	if len(body) < box_size:
-		if log:
-			#print 'matching snake and box size'
-			box_size = len(body)
+		box_size = len(body)
 	# mark last box_size (n) of body (in reverse order because closer to tail is better)
 	c_list = body[-box_size::]
 	c_list = c_list[::-1]
@@ -642,10 +612,10 @@ def escape(box_size, game_board):
 	escape_routes = []
 	valid = []
 	adj = []
-	adj.append(get_left(head))
-	adj.append(get_right(head))
-	adj.append(get_up(head))
-	adj.append(get_down(head))
+	adj.append(get_left(head,data))
+	adj.append(get_right(head,data))
+	adj.append(get_up(head,data))
+	adj.append(get_down(head,data))
 	# test each bfs path from each coord to escape location
 	for coord in adj:
 		# if invalid direction (edge of board)
@@ -678,7 +648,7 @@ def escape(box_size, game_board):
 		# sort paths by length
 		escape_routes.sort(key=lambda tup: tup[0])
 		# returns direction of first step in longest valid path
-		return return_move(head, escape_routes[-1][1])
+		return (return_move(head, escape_routes[-1][1]), escapable)
 	else:
 		escapable = False
 		print('no way out')
@@ -688,17 +658,16 @@ def escape(box_size, game_board):
 		else:
 			#print("valid: ")
 			print(valid)
-			return return_move(head, valid[0])
+			return (return_move(head, valid[0]),escapable)
 
 # returns  list of which boxes the snake belongs to (may be more than 1 for filtering later)
-def snake_info(num_board):
-	global data
+def snake_info(num_board,data):
 	head = [data['you']['body'][0]['x'], data['you']['body'][0]['y']]
 	# get surrounding
-	left = get_left(head)
-	right = get_right(head)
-	up = get_up(head)
-	down = get_down(head)
+	left = get_left(head,data)
+	right = get_right(head,data)
+	up = get_up(head,data)
+	down = get_down(head,data)
 	# check what is around
 	directions = [up,down,left,right]
 	l = []
@@ -712,15 +681,14 @@ def snake_info(num_board):
 			l.append((num_board[d[1]][d[0]], d))
 	return l
 
-# returns board with 'G' for every body part t hat will be gone by time snake gets to it
-def ghost_tail(board, debug = False):
-	global data
+# returns board with 'G' for every body part that will be gone by time snake gets to it
+def ghost_tail(board, data, debug = False):
 	new_board = board.copy()
 	body = data['you']['body']
 	# check distance from head to every body part
 	head = (body[0]['x'],body[0]['y'])
 	loc = 2
-	for b in body[2:]:
+	for b in body[2:-1]:
 		# get distance to body part
 		dest = {'x':b['x'],'y': b['y']}
 		path = bfs(new_board, head, dest)[1:]
@@ -733,32 +701,27 @@ def ghost_tail(board, debug = False):
 		length = len(data['you']['body'])-1
 		diff = length - loc
 		# body part will be gone if it is closer to tail than distance to it
-		# special case for tail (diff == 0). This is likely a rule change for 2019 so maybe delete
-		if (diff < dist and diff != 0):
+		if diff < dist:
 			new_board[dest['y']][dest['x']] = '-'
 		loc +=1
 	return new_board
 
 
 # Helper functions for getting our surroundings. Return -1 if surrounding is out of bounds
-def get_right(point):
-	global data
+def get_right(point, data):
 	board_width = data['board']['width']
 	if point[0] == board_width-1: return -1
 	return [point[0]+1,point[1]]
 
-def get_left(point):
-	global data
+def get_left(point,data):
 	if point[0] == 0: return -1
 	return [point[0]-1,point[1]]
 
-def get_up(point):
-	global data
+def get_up(point,data):
 	if point[1] == 0: return -1
 	return [point[0],point[1]-1]
 
-def get_down(point):
-	global data
+def get_down(point,data):
 	board_height = data['board']['height']
 	if point[1] == board_height-1: return -1
 	return [point[0],point[1]+1]

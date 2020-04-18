@@ -16,7 +16,7 @@ This AI client uses the [bottle web framework](http://bottlepy.org/docs/dev/inde
 
 ## Running the Snake Locally
 
-1) Clone repo to your development environment:
+1) Clone repo to your development environment
 
 2) Install dependencies using [pip](https://pip.pypa.io/en/latest/installing.html):
 ```

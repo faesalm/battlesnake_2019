@@ -32,35 +32,3 @@ pip install -r requirements.txt
 ```
 python app/main.py
 ```
-
-5) Test your snake by sending a curl to the running snake
-```
-curl -XPOST -H 'Content-Type: application/json' -d '{ "hello": "world"}' http://localhost:8080/start
-```
-
-## Deploying to Heroku
-
-1) Create a new Heroku app:
-```
-heroku create [APP_NAME]
-```
-
-2) Deploy code to Heroku servers:
-```
-git push heroku master
-```
-
-3) Open Heroku app in browser:
-```
-heroku open
-```
-or visit [http://APP_NAME.herokuapp.com](http://APP_NAME.herokuapp.com).
-
-4) View server logs with the `heroku logs` command:
-```
-heroku logs --tail
-```
-
-## Questions?
-
-Email [battlesnake@sendwithus.com](mailto:battlesnake@sendwithus.com), or tweet [@send_with_us](http://twitter.com/send_with_us).
